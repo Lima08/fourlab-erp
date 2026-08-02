@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#f8fafc" />
+    <title>Kadu - Vistoria Tecnica</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: #f8fafc;
+      }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.25rem;
+        margin: 0;
+        background: #f8fafc;
+        font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color: #0f172a;
+      }
+      #boot-splash img {
+        width: 72px;
+        height: 72px;
+        border-radius: 0.75rem;
+        object-fit: cover;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+        animation: boot-splash-in 500ms ease-out both;
+      }
+      #boot-splash .boot-splash-brand {
+        text-align: center;
+        animation: boot-splash-in 500ms ease-out 80ms both;
+      }
+      #boot-splash .boot-splash-title {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        line-height: 1.1;
+      }
+      #boot-splash .boot-splash-subtitle {
+        margin: 0.35rem 0 0;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: #64748b;
+      }
+      @keyframes boot-splash-in {
+        from {
+          opacity: 0;
+          transform: scale(0.96);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #boot-splash img,
+        #boot-splash .boot-splash-brand {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="boot-splash" role="status" aria-live="polite" aria-label="Carregando Kadu">
+      <img src="/icons/icon-192.png" alt="" width="72" height="72" />
+      <div class="boot-splash-brand">
+        <p class="boot-splash-title">Kadu</p>
+        <p class="boot-splash-subtitle">Vistoria Técnica</p>
+      </div>
+    </div>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

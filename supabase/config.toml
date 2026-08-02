@@ -1,0 +1,62 @@
+# Supabase local config — administração de usuários Edge Functions
+#
+# Deploy (requer Supabase CLI logado e projeto linkado):
+#   supabase functions deploy invite-user
+#   supabase functions deploy update-user
+#
+# Secrets no projeto remoto (Dashboard > Edge Functions > Secrets ou CLI):
+#   supabase secrets set SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
+#   supabase secrets set SITE_URL=https://<seu-dominio>
+#
+# Dev local:
+#   supabase start
+#   supabase functions serve invite-user update-user --env-file supabase/.env.local
+#
+# Teste manual (substituir URL, anon key e JWT de admin):
+#   curl -i -X POST http://127.0.0.1:54321/functions/v1/invite-user \
+#     -H "Authorization: Bearer <admin_jwt>" \
+#     -H "apikey: <anon_key>" \
+#     -H "Content-Type: application/json" \
+#     -d '{"mode":"create","fullName":"Test","email":"test@example.com","phone":"11999999999","role":"cliente"}'
+
+project_id = "wmqbpkytypriizocerdq"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+
+[inbucket]
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:5173"
+additional_redirect_urls = [
+  "http://localhost:5173/ativar-conta",
+  "http://localhost:5173/reset-senha",
+]
+jwt_expiry = 3600
+enable_signup = true
+
+[functions.invite-user]
+verify_jwt = true
+
+[functions.update-user]
+verify_jwt = true

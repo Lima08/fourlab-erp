@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+
+# Bloqueia o push se o gate de qualidade falhar.
+# Para pular em emergência (não use no dia a dia): HUSKY=0 git push
+echo "→ Rodando gate local (tsc + lint + test + build)..."
+npm run gate
