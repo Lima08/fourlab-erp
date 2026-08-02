@@ -7,9 +7,6 @@ import QueryProvider from '@/shared/providers/QueryProvider'
 import AuthProvider from '@/shared/providers/AuthProvider'
 import { BootSplashHost } from '@/shared/components/BootSplashHost'
 import { Toaster } from '@/components/ui/sonner'
-import { seedDevelopmentDatabase } from '@/shared/db/seed/seeder'
-
-seedDevelopmentDatabase().catch(console.error)
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

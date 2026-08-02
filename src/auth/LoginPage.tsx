@@ -69,27 +69,25 @@ export default function LoginPage() {
         return
       }
 
-      if (profile?.status === 'convite_pendente') {
-        await signOutAndClearSession()
-        setError('Conta ainda não ativada. Use o link do convite ou fale com o administrador.')
-        return
-      }
-
-      if (profile?.status === 'suspenso') {
-        await signOutAndClearSession()
-        setError('Conta suspensa. Entre em contato com o administrador.')
-        return
-      }
-
       if (!profile) {
         await signOutAndClearSession()
         setError('Perfil não encontrado. Fale com o administrador.')
         return
       }
 
+      if (!profile.isActive) {
+        await signOutAndClearSession()
+        setError(
+          profile.activatedAt === null
+            ? 'Conta ainda não ativada. Use o link do convite.'
+            : 'Conta suspensa. Fale com o administrador.'
+        )
+        return
+      }
+
       queryClient.setQueryData(['profile', 'current', data.session.user.id], profile)
 
-      navigate(getAuthHomePath(profile.role))
+      navigate(getAuthHomePath())
     } finally {
       setLoading(false)
     }
@@ -118,11 +116,9 @@ export default function LoginPage() {
             )}
           >
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-industrial-400">
-              Kadu
+              Fourlab
             </p>
-            <h1 className="text-2xl font-extrabold tracking-tight text-industrial-900">
-              Vistoria Técnica
-            </h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-industrial-900">ERP</h1>
             <p className="text-sm text-industrial-500">Entre com sua conta para continuar</p>
           </div>
         </div>

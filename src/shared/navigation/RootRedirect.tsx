@@ -10,7 +10,7 @@ import {
 export default function RootRedirect() {
   const user = useAuthStore((s) => s.user)
   const isInitializing = useAuthStore((s) => s.isInitializing)
-  const { profile, isPendingInvite, isLoading } = useCurrentProfile()
+  const { profile, isPendingInvite, isDeactivated, isLoading } = useCurrentProfile()
   const authSuffix = preserveAuthRedirectSuffix()
 
   if (isInitializing || (user && isLoading)) return null
@@ -19,9 +19,17 @@ export default function RootRedirect() {
     return <Navigate to={`${INVITE_ACCOUNT_PATH}${authSuffix}`} replace />
   }
 
-  if (user && profile) {
-    return <Navigate to={`${getAuthHomePath(profile.role)}${authSuffix}`} replace />
+  if (user && !profile) {
+    return <Navigate to={`${INVITE_ACCOUNT_PATH}${authSuffix}`} replace />
   }
 
-  return <Navigate to={`/campo${authSuffix}`} replace />
+  if (user && isDeactivated) {
+    return <Navigate to={`/login${authSuffix}`} replace />
+  }
+
+  if (user && profile) {
+    return <Navigate to={`${getAuthHomePath()}${authSuffix}`} replace />
+  }
+
+  return <Navigate to={`/login${authSuffix}`} replace />
 }

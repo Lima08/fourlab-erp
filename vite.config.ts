@@ -14,18 +14,11 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /\/campo\/.*/,
-            handler: 'CacheFirst',
-            options: { cacheName: 'campo-assets' },
-          },
-        ],
       },
       manifest: {
-        name: 'Kadu - Vistoria Tecnica',
-        short_name: 'Kadu',
-        start_url: '/campo',
+        name: 'Fourlab - ERP',
+        short_name: 'Fourlab',
+        start_url: '/',
         display: 'standalone',
         background_color: '#f8fafc',
         theme_color: '#f8fafc',
@@ -63,9 +56,6 @@ export default defineConfig({
           }
           if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run')) {
             return 'vendor-router'
-          }
-          if (id.includes('node_modules/dexie')) {
-            return 'vendor-db'
           }
           if (id.includes('node_modules/@supabase')) {
             return 'vendor-supabase'

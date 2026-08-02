@@ -1,13 +1,7 @@
-import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, cleanup, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, cleanup, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { UserMenu } from './UserMenu'
-import { PLATFORM_NAV } from '@/shared/navigation/platformNav'
-import { isUserManagementEnabled } from '@/shared/config/features'
-
-vi.mock('@/shared/config/features', () => ({
-  isUserManagementEnabled: vi.fn(() => true),
-}))
 
 const navigateMock = vi.fn()
 
@@ -16,7 +10,6 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useNavigate: () => navigateMock,
-    useLocation: () => ({ pathname: '/plataforma' }),
   }
 })
 
@@ -29,8 +22,7 @@ vi.mock('@/shared/stores/authStore', () => ({
 
 vi.mock('@/shared/hooks/useCurrentProfile', () => ({
   useCurrentProfile: () => ({
-    profile: { role: 'admin', fullName: 'Ricardo Teixeira' },
-    isAdmin: true,
+    profile: { fullName: 'Ricardo Teixeira', isActive: true },
   }),
 }))
 
@@ -44,11 +36,7 @@ afterEach(() => {
 })
 
 describe('UserMenu', () => {
-  beforeEach(() => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(true)
-  })
-
-  it('exibe seção Plataforma com itens de navegação para admin', () => {
+  it('exibe nome e e-mail no cabeçalho do menu', () => {
     render(
       <MemoryRouter>
         <UserMenu />
@@ -57,42 +45,11 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Ricardo/i }))
 
-    expect(screen.getByText('Plataforma')).toBeInTheDocument()
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Administração de projetos')).toBeInTheDocument()
-    expect(screen.getByText('Administração de usuários')).toBeInTheDocument()
-  })
-
-  it('oculta Administração de usuários quando gestão de usuários está desativada', () => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(false)
-
-    render(
-      <MemoryRouter>
-        <UserMenu />
-      </MemoryRouter>
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /Ricardo/i }))
-
-    expect(screen.getByText('Dashboard')).toBeInTheDocument()
-    expect(screen.getByText('Administração de projetos')).toBeInTheDocument()
-    expect(screen.queryByText('Administração de usuários')).not.toBeInTheDocument()
-  })
-
-  it('exibe papel do usuário em verde no cabeçalho do menu', () => {
-    render(
-      <MemoryRouter>
-        <UserMenu />
-      </MemoryRouter>
-    )
-
-    fireEvent.click(screen.getByRole('button', { name: /Ricardo/i }))
-
-    expect(screen.getByText('Administrador')).toBeInTheDocument()
     expect(screen.getByText('Ricardo Teixeira')).toBeInTheDocument()
+    expect(screen.getByText('admin@exemplo.com')).toBeInTheDocument()
   })
 
-  it('exibe Minha conta, Preferências e Sair da conta', () => {
+  it('exibe Sair da conta', () => {
     render(
       <MemoryRouter>
         <UserMenu />
@@ -101,12 +58,10 @@ describe('UserMenu', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /Ricardo/i }))
 
-    expect(screen.getByText('Minha conta')).toBeInTheDocument()
-    expect(screen.getByText('Preferências')).toBeInTheDocument()
     expect(screen.getByText('Sair da conta')).toBeInTheDocument()
   })
 
-  it('navega para /plataforma ao clicar em Dashboard', () => {
+  it('faz logout e navega para /login', async () => {
     render(
       <MemoryRouter>
         <UserMenu />
@@ -114,13 +69,10 @@ describe('UserMenu', () => {
     )
 
     fireEvent.click(screen.getByRole('button', { name: /Ricardo/i }))
-    fireEvent.click(screen.getByText('Dashboard'))
+    fireEvent.click(screen.getByText('Sair da conta'))
 
-    expect(navigateMock).toHaveBeenCalledWith('/plataforma')
-  })
-
-  it('aponta Dashboard da plataforma para /plataforma', () => {
-    expect(PLATFORM_NAV[0]?.to).toBe('/plataforma')
-    expect(PLATFORM_NAV[0]?.isActive('/plataforma')).toBe(true)
+    await waitFor(() => {
+      expect(navigateMock).toHaveBeenCalledWith('/login', { replace: true })
+    })
   })
 })

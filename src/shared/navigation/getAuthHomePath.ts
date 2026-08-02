@@ -1,9 +1,5 @@
-import type { ProfileRole } from '@/shared/types/profile'
-import { isUserManagementEnabled } from '../config/features'
-
-export function getAuthHomePath(role: ProfileRole): '/plataforma' | '/campo' {
-  if (!isUserManagementEnabled()) return '/campo'
-  return role === 'admin' ? '/plataforma' : '/campo'
+export function getAuthHomePath(): '/inicio' {
+  return '/inicio'
 }
 
 export const INVITE_ACCOUNT_PATH = '/ativar-conta' as const

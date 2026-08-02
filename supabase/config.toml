@@ -19,7 +19,7 @@
 #     -H "Content-Type: application/json" \
 #     -d '{"mode":"create","fullName":"Test","email":"test@example.com","phone":"11999999999","role":"cliente"}'
 
-project_id = "wmqbpkytypriizocerdq"
+project_id = "fihthjhpigwbaievvcay"
 
 [api]
 enabled = true

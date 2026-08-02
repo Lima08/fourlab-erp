@@ -113,7 +113,7 @@ export function BootSplash({
     <div
       role="status"
       aria-live="polite"
-      aria-label="Carregando Kadu"
+      aria-label="Carregando Fourlab"
       data-fading={fading ? 'true' : undefined}
       className={cn(
         'fixed inset-0 z-9999 flex flex-col items-center justify-center gap-5',
@@ -143,9 +143,9 @@ export function BootSplash({
           fading ? 'translate-y-2 opacity-0' : 'translate-y-0 opacity-100',
         )}
       >
-        <p className="m-0 text-[1.75rem] font-extrabold leading-tight tracking-tight">Kadu</p>
+        <p className="m-0 text-[1.75rem] font-extrabold leading-tight tracking-tight">Fourlab</p>
         <p className="mt-1.5 m-0 text-xs font-bold uppercase tracking-[0.14em] text-industrial-500">
-          Vistoria Técnica
+          ERP
         </p>
       </div>
     </div>
