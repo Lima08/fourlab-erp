@@ -22,17 +22,18 @@
 
 ## Edge Functions
 
-Legado de vistoria (`invite-user` / `update-user`) — fora do escopo do ERP MVP. Ver [SUPABASE_FUNCTIONS.md](./SUPABASE_FUNCTIONS.md) se reativar.
+`invite-user` / `update-user` — fora do escopo do ERP MVP. Ver [SUPABASE_FUNCTIONS.md](./SUPABASE_FUNCTIONS.md) se reativar.
 
 ## PWA
 
 - Plugin Vite PWA
 - Manifest Fourlab ERP, `start_url: /`
+- Ícones: `public/favicon*.png`, `public/icons/icon-{192,512}.png` (marca Fourlab 3D)
 - Precache de assets estáticos
 
 ## Aplicar no remoto (`fihthjhpigwbaievvcay`)
 
-A conta OAuth do MCP Supabase neste ambiente só enxerga o projeto antigo (`wmqbpkytypriizocerdq` / org Lima). O projeto Fourlab precisa estar na mesma conta/org, ou o MCP precisa ser reautenticado com a conta dona de `fihthjhpigwbaievvcay`.
+Confirme que o MCP Supabase (ou a CLI) está autenticado na conta dona do projeto `fihthjhpigwbaievvcay`.
 
 Depois do acesso:
 

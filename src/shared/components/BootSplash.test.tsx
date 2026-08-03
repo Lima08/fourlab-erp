@@ -14,7 +14,7 @@ describe('BootSplash', () => {
     expect(screen.getByRole('status', { name: /Carregando Fourlab/i })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveClass('bg-industrial-50')
     expect(screen.getByText('Fourlab')).toBeInTheDocument()
-    expect(screen.getByText('ERP')).toBeInTheDocument()
+    expect(screen.getByText('ERP · Impressão 3D')).toBeInTheDocument()
   })
 
   it('fica transparente e some o texto quando fading', () => {

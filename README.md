@@ -1,6 +1,6 @@
 # Fourlab ERP
 
-PWA mobile-first com React + Supabase para gestão empresarial da Fourlab (impressoras 3D).
+PWA mobile-first com React + Supabase para gestão empresarial da Fourlab (impressão 3D).
 
 ## Stack
 

@@ -116,7 +116,7 @@ export default function LoginPage() {
             )}
           >
             <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-industrial-400">
-              Fourlab
+              Fourlab 3D
             </p>
             <h1 className="text-2xl font-extrabold tracking-tight text-industrial-900">ERP</h1>
             <p className="text-sm text-industrial-500">Entre com sua conta para continuar</p>

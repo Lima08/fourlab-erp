@@ -145,7 +145,7 @@ export function BootSplash({
       >
         <p className="m-0 text-[1.75rem] font-extrabold leading-tight tracking-tight">Fourlab</p>
         <p className="mt-1.5 m-0 text-xs font-bold uppercase tracking-[0.14em] text-industrial-500">
-          ERP
+          ERP · Impressão 3D
         </p>
       </div>
     </div>
