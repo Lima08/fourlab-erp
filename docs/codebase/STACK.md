@@ -25,7 +25,7 @@
 ## PWA / deploy
 
 - `vite-plugin-pwa` + Workbox
-- Cloudflare Pages via Wrangler (`fourlab-erp`)
+- Cloudflare Workers via Wrangler (`fourlab-erp`, `*.workers.dev`)
 - Manifest: `display: standalone`, `start_url: /`
 
 ## Testes / qualidade

@@ -1,14 +1,9 @@
-name: CI/CD
+name: CI
 
 on:
   pull_request:
     branches: [main, develop]
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: "Deploy no Cloudflare Pages (main = produção; outra branch = preview)"
-        type: boolean
-        default: true
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -50,37 +45,4 @@ jobs:
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
           VITE_FEATURE_FLAG_USER_MANAGEMENT: ${{ secrets.VITE_FEATURE_FLAG_USER_MANAGEMENT }}
-
-      - name: Upload dist
-        if: github.event_name == 'workflow_dispatch' && inputs.deploy
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist
-          retention-days: 1
-
-  deploy:
-    name: Deploy Cloudflare Pages
-    needs: gate
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    environment: development
-    permissions:
-      contents: read
-      deployments: write
-
-    steps:
-      - name: Download dist
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist
-
-      - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=${{ vars.CLOUDFLARE_PAGES_PROJECT_NAME || 'fourlab-erp' }} --branch=${{ github.ref_name }}
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+          VITE_VIA_CEP_URL: ${{ secrets.VITE_VIA_CEP_URL }}

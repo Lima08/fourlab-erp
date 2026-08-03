@@ -39,7 +39,7 @@ fourlab-erp/
 ├── docs/codebase/
 ├── package.json               # name: fourlab-erp
 ├── vite.config.ts
-└── wrangler.jsonc             # Cloudflare Pages: fourlab-erp
+└── wrangler.jsonc             # Cloudflare Workers: fourlab-erp
 ```
 
 ## Onde achar

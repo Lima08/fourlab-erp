@@ -36,7 +36,7 @@ npm run gate
 
 ## Deploy
 
-Cloudflare Pages (`wrangler` / CI). Ver [docs/codebase/DEPLOY.md](docs/codebase/DEPLOY.md).
+Cloudflare Workers (`wrangler` / Workers Builds). CI (gate) no GitHub Actions. Ver [docs/codebase/DEPLOY.md](docs/codebase/DEPLOY.md).
 
 ## Próximos módulos
 
