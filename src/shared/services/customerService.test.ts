@@ -1,10 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { supabase } from '@/shared/db/supabase'
 import {
+  buildCustomerSearchOrFilter,
   createCustomer,
   CustomerError,
   escapeIlikePattern,
   getCustomer,
+  getCustomerStatusCounts,
   listCustomerOrders,
   listCustomers,
   setCustomerActive,
@@ -102,14 +104,71 @@ describe('listCustomers', () => {
     expect(result.total).toBe(21)
   })
 
-  it('aplica filtro de busca com escape', async () => {
+  it('aplica filtro de busca com escape e valores entre aspas', async () => {
     const query = mockListQuery({ data: [], count: 0 })
 
     await listCustomers({ page: 1, status: 'all', search: '100%' })
 
-    expect(query.or).toHaveBeenCalledWith(
-      'full_name.ilike.%100\\%%,trade_name.ilike.%100\\%%,document.ilike.%100\\%%,email.ilike.%100\\%%,phone.ilike.%100\\%%'
-    )
+    expect(query.or).toHaveBeenCalledWith(buildCustomerSearchOrFilter('100%'))
+    expect(query.or.mock.calls[0]?.[0]).toContain('full_name.ilike."%100\\%%"')
+  })
+
+  it('protege vírgulas no termo de busca dentro do filtro or', async () => {
+    const query = mockListQuery({ data: [], count: 0 })
+
+    await listCustomers({ page: 1, status: 'all', search: 'Hexagon, Inc' })
+
+    const filter = query.or.mock.calls[0]?.[0] as string
+    expect(filter).toContain('full_name.ilike."%Hexagon, Inc%"')
+    expect(filter.split('ilike.').length).toBeGreaterThan(2)
+  })
+
+  it('busca telefone também pelos dígitos quando há máscara', async () => {
+    const query = mockListQuery({ data: [], count: 0 })
+
+    await listCustomers({ page: 1, status: 'all', search: '(11) 98765-4321' })
+
+    const filter = query.or.mock.calls[0]?.[0] as string
+    expect(filter).toContain('phone.ilike."%11987654321%"')
+  })
+})
+
+describe('buildCustomerSearchOrFilter', () => {
+  it('inclui cláusula de telefone só com dígitos quando há máscara', () => {
+    const filter = buildCustomerSearchOrFilter('(11) 98888-7777')
+    expect(filter).toContain('phone.ilike."%(11) 98888-7777%"')
+    expect(filter).toContain('phone.ilike."%11988887777%"')
+  })
+})
+
+describe('getCustomerStatusCounts', () => {
+  it('conta ativos, inativos e todos em paralelo', async () => {
+    const responses = [
+      { count: 3, error: null },
+      { count: 1, error: null },
+      { count: 4, error: null },
+    ]
+    let call = 0
+
+    const select = vi.fn().mockImplementation(() => {
+      const result = responses[call++] ?? { count: 0, error: null }
+      const builder = {
+        eq: vi.fn().mockReturnThis(),
+        or: vi.fn().mockReturnThis(),
+        then: (
+          resolve: (value: { count: number; error: null }) => unknown,
+          reject?: (reason: unknown) => unknown
+        ) => Promise.resolve(result).then(resolve, reject),
+      }
+      return builder
+    })
+
+    vi.mocked(supabase.from).mockReturnValue({ select } as never)
+
+    const counts = await getCustomerStatusCounts('')
+
+    expect(counts).toEqual({ active: 3, inactive: 1, all: 4 })
+    expect(select).toHaveBeenCalledTimes(3)
   })
 })
 

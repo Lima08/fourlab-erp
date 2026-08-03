@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { CustomerListHeader } from '@/app/customers/components/CustomerListHeader'
 import { CustomerFilters } from '@/app/customers/components/CustomerFilters'
 import { CustomerList } from '@/app/customers/components/CustomerList'
 import { CustomerEmptyState } from '@/app/customers/components/CustomerEmptyState'
 import { useCustomers } from '@/app/customers/hooks/useCustomers'
+import { useCustomerCounts } from '@/app/customers/hooks/useCustomerCounts'
 import type { CustomerStatusFilterId } from '@/app/customers/constants'
 import { Pagination } from '@/components/ui/pagination'
 import { Icon } from '@/components/ui/icon'
@@ -16,20 +17,12 @@ export default function CustomersPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
 
-  const { customers, total, totalPages, isLoading } = useCustomers({
+  const { customers, totalPages, isLoading, isError } = useCustomers({
     page,
     statusFilter,
     search,
   })
-
-  const counts = useMemo(
-    () => ({
-      active: statusFilter === 'active' ? total : 0,
-      inactive: statusFilter === 'inactive' ? total : 0,
-      all: statusFilter === 'all' ? total : 0,
-    }),
-    [statusFilter, total]
-  )
+  const { counts } = useCustomerCounts(search)
 
   function handleFilterChange(filter: CustomerStatusFilterId) {
     setStatusFilter(filter)
@@ -68,6 +61,10 @@ export default function CustomersPage() {
 
       {isLoading ? (
         <p className="text-industrial-500 text-sm">Carregando clientes…</p>
+      ) : isError ? (
+        <p className="text-sm font-medium text-red-700" role="alert">
+          Não foi possível carregar os clientes. Tente novamente.
+        </p>
       ) : customers.length === 0 ? (
         <CustomerEmptyState hasSearch={search.length > 0 || statusFilter !== 'active'} />
       ) : (

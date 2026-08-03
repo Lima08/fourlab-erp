@@ -28,16 +28,19 @@ function toProfile(row: ProfileRow): Profile {
 export async function fetchOwnProfile(): Promise<Profile | null> {
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser()
 
+  if (authError) throw authError
   if (!user) return null
 
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from('profiles')
     .select('id, full_name, email, phone, is_active, activated_at, created_at, updated_at')
     .eq('id', user.id)
     .maybeSingle()
 
+  if (error) throw error
   if (!row) return null
 
   return toProfile(row as ProfileRow)
@@ -72,10 +75,17 @@ export async function activatePendingInviteIfNeeded(): Promise<{
   error?: string
   activated: boolean
 }> {
-  const profile = await fetchOwnProfile()
-  if (!profile || profile.activatedAt !== null) {
-    return { activated: false }
-  }
+  try {
+    const profile = await fetchOwnProfile()
+    if (!profile || profile.activatedAt !== null) {
+      return { activated: false }
+    }
 
-  return activateOwnProfile()
+    return activateOwnProfile()
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Não foi possível carregar o perfil',
+      activated: false,
+    }
+  }
 }

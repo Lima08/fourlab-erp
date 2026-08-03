@@ -10,33 +10,30 @@ import {
 export function useCustomerMutations() {
   const queryClient = useQueryClient()
 
-  const invalidateCustomer = (id?: string) => {
-    queryClient.invalidateQueries({ queryKey: customerKeys.lists() })
-    if (id) {
-      queryClient.invalidateQueries({ queryKey: customerKeys.detail(id) })
-    }
+  const invalidateCustomers = () => {
+    queryClient.invalidateQueries({ queryKey: customerKeys.all })
   }
 
   const createMutation = useMutation({
     mutationFn: (input: CustomerWriteInput) => createCustomer(input),
-    onSuccess: (customer) => {
-      invalidateCustomer(customer.id)
+    onSuccess: () => {
+      invalidateCustomers()
     },
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ id, input }: { id: string; input: CustomerWriteInput }) =>
       updateCustomer(id, input),
-    onSuccess: (customer) => {
-      invalidateCustomer(customer.id)
+    onSuccess: () => {
+      invalidateCustomers()
     },
   })
 
   const setActiveMutation = useMutation({
     mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) =>
       setCustomerActive(id, isActive),
-    onSuccess: (_data, variables) => {
-      invalidateCustomer(variables.id)
+    onSuccess: () => {
+      invalidateCustomers()
     },
   })
 

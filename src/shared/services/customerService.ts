@@ -92,6 +92,37 @@ export function escapeIlikePattern(value: string): string {
   return value.replace(/[%_\\]/g, '\\$&')
 }
 
+/** Quote a PostgREST filter value so commas/spaces do not split `.or()` clauses. */
+export function quotePostgrestValue(value: string): string {
+  return `"${value.replace(/"/g, '\\"')}"`
+}
+
+export function buildCustomerSearchOrFilter(search: string): string {
+  const trimmed = search.trim()
+  const pattern = quotePostgrestValue(`%${escapeIlikePattern(trimmed)}%`)
+  const parts = [
+    `full_name.ilike.${pattern}`,
+    `trade_name.ilike.${pattern}`,
+    `document.ilike.${pattern}`,
+    `email.ilike.${pattern}`,
+    `phone.ilike.${pattern}`,
+  ]
+
+  const phoneDigits = stripDigits(trimmed)
+  if (phoneDigits.length >= 3) {
+    const digitsPattern = quotePostgrestValue(`%${escapeIlikePattern(phoneDigits)}%`)
+    parts.push(`phone.ilike.${digitsPattern}`)
+  }
+
+  return parts.join(',')
+}
+
+export interface CustomerStatusCounts {
+  active: number
+  inactive: number
+  all: number
+}
+
 function normalizeDocument(document?: string | null): string | null {
   if (!document) return null
   const digits = stripDigits(document)
@@ -164,27 +195,35 @@ function toOrderSummary(row: OrderRow): CustomerOrderSummary {
   }
 }
 
+function applyCustomerListFilters(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST filter chain
+  query: any,
+  params: { status: CustomerStatusFilter; search: string }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- PostgREST filter chain
+): any {
+  let next = query
+
+  if (params.status === 'active') {
+    next = next.eq('is_active', true)
+  } else if (params.status === 'inactive') {
+    next = next.eq('is_active', false)
+  }
+
+  const trimmedSearch = params.search.trim()
+  if (trimmedSearch) {
+    next = next.or(buildCustomerSearchOrFilter(trimmedSearch))
+  }
+
+  return next
+}
+
 export async function listCustomers(params: ListCustomersParams): Promise<ListCustomersResult> {
   const pageSize = params.pageSize ?? DEFAULT_PAGE_SIZE
   const from = (params.page - 1) * pageSize
   const to = from + pageSize - 1
 
   let query = supabase.from('customers').select('*', { count: 'exact' })
-
-  if (params.status === 'active') {
-    query = query.eq('is_active', true)
-  } else if (params.status === 'inactive') {
-    query = query.eq('is_active', false)
-  }
-
-  const trimmedSearch = params.search.trim()
-  if (trimmedSearch) {
-    const escaped = escapeIlikePattern(trimmedSearch)
-    const pattern = `%${escaped}%`
-    query = query.or(
-      `full_name.ilike.${pattern},trade_name.ilike.${pattern},document.ilike.${pattern},email.ilike.${pattern},phone.ilike.${pattern}`
-    )
-  }
+  query = applyCustomerListFilters(query, params)
 
   const { data, error, count } = await query
     .order('full_name', { ascending: true })
@@ -196,6 +235,28 @@ export async function listCustomers(params: ListCustomersParams): Promise<ListCu
     rows: (data ?? []).map((row) => toCustomer(row as CustomerRow)),
     total: count ?? 0,
   }
+}
+
+async function countCustomers(params: {
+  status: CustomerStatusFilter
+  search: string
+}): Promise<number> {
+  let query = supabase.from('customers').select('*', { count: 'exact', head: true })
+  query = applyCustomerListFilters(query, params)
+
+  const { count, error } = await query
+  if (error) throw error
+  return count ?? 0
+}
+
+export async function getCustomerStatusCounts(search: string): Promise<CustomerStatusCounts> {
+  const [active, inactive, all] = await Promise.all([
+    countCustomers({ status: 'active', search }),
+    countCustomers({ status: 'inactive', search }),
+    countCustomers({ status: 'all', search }),
+  ])
+
+  return { active, inactive, all }
 }
 
 export async function getCustomer(id: string): Promise<Customer | null> {
