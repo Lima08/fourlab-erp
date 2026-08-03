@@ -1,6 +1,6 @@
 # Architecture — Fourlab ERP
 
-Shell React + Supabase online-first. Módulo **Clientes** implementado; demais domínios (financeiro, estoque, produção) em roadmap.
+Shell React + Supabase online-first. Módulos **Clientes** e **Dashboard (Início)** implementados; estoque/produção UI em roadmap.
 
 ## Visão geral
 
@@ -8,11 +8,11 @@ Shell React + Supabase online-first. Módulo **Clientes** implementado; demais d
 Browser (PWA)
   └── React app
         ├── auth/          Login + password flows
-        ├── app/           Guard + layout + home + customers
+        ├── app/           Guard + layout + home/dashboard + customers
         └── shared/
               ├── db/supabase (+ database.types.ts)
               ├── stores/authStore + AuthProvider
-              ├── services/profile*, customerService
+              ├── services/profile*, customerService, dashboardService, saleService
               └── providers/QueryProvider
                     └── Supabase Auth + Postgres (RLS)
 ```
@@ -21,9 +21,19 @@ Browser (PWA)
 
 ### `src/app/`
 
-Shell autenticado: `AppGuard`, `AppLayout` (header + bottom nav mobile), `HomePage`, módulo `customers/`.
+Shell autenticado: `AppGuard`, `AppLayout` (header + bottom nav mobile), `HomePage` (dashboard), módulo `customers/`, pasta `dashboard/` (hooks + seções).
 
 **Navegação:** bottom nav `< md`; links equivalentes no header `md+` (`/inicio`, `/clientes`).
+
+### `src/app/dashboard/`
+
+Dashboard read-only em `/inicio`: pulso financeiro (caixa), vendas + Recharts (6 meses), funil de produção, últimos aprovados.
+
+- **I/O:** `shared/services/dashboardService.ts`
+- **Agregações:** `dashboard/utils/dashboardAggregates.ts`
+- **Doc operacional:** `docs/domain/fluxo-caixa-e-dashboard.md`
+
+Financeiro achatado: `financial_titles` carrega `due_date` / `payment_date` / `status` (sem `financial_installments`). Triggers + RPCs de vendas materializam títulos ao aprovar.
 
 ### `src/app/customers/`
 
@@ -63,7 +73,7 @@ Design system headless (Base UI + Tailwind + CVA). Sem Supabase, sem store.
 ## PWA
 
 - `vite-plugin-pwa`, `registerType: 'autoUpdate'`
-- Manifest: `Fourlab - ERP`, `start_url: '/'`, `display: standalone`
+- Manifest: `Fourlab 3D — ERP`, `start_url: '/'`, `display: standalone`
 - Precache de assets estáticos; dados de negócio não vão para o SW
 
 ## Admin users

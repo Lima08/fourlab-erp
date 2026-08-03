@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge'
 import { Icon } from '@/components/ui/icon'
 import type { CustomerOrderSummary } from '@/shared/services/customerService'
 import type { Database } from '@/shared/db/database.types'
+import { formatCurrency } from '@/shared/utils/formatCurrency'
 
 interface CustomerOrdersSectionProps {
   orders: CustomerOrderSummary[]
@@ -15,10 +16,6 @@ const ORDER_STATUS_LABELS: Record<Database['public']['Enums']['order_status'], s
   completed: 'Concluído',
   delivered: 'Entregue',
   canceled: 'Cancelado',
-}
-
-function formatCurrency(value: number): string {
-  return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
 function formatDate(value: string): string {

@@ -29,29 +29,24 @@ const baseOrder: SaleOrderRow = {
   financial_titles: [
     {
       id: 'title-1',
-      financial_installments: [
-        {
-          id: 'inst-1',
-          amount: 400,
-          due_date: '2026-08-01',
-          payment_date: '2026-08-02',
-          status: 'paid',
-        },
-        {
-          id: 'inst-2',
-          amount: 300,
-          due_date: '2026-08-20',
-          payment_date: null,
-          status: 'pending',
-        },
-        {
-          id: 'inst-3',
-          amount: 300,
-          due_date: '2026-07-01',
-          payment_date: null,
-          status: 'pending',
-        },
-      ],
+      total_amount: 400,
+      due_date: '2026-08-01',
+      payment_date: '2026-08-02',
+      status: 'paid',
+    },
+    {
+      id: 'title-2',
+      total_amount: 300,
+      due_date: '2026-08-20',
+      payment_date: null,
+      status: 'pending',
+    },
+    {
+      id: 'title-3',
+      total_amount: 300,
+      due_date: '2026-07-01',
+      payment_date: null,
+      status: 'pending',
     },
   ],
 }

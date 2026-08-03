@@ -111,64 +111,22 @@ export type Database = {
         }
         Relationships: []
       }
-      financial_installments: {
-        Row: {
-          amount: number
-          created_at: string
-          due_date: string
-          id: string
-          installment_no: number
-          payment_date: string | null
-          payment_method: Database["public"]["Enums"]["payment_method"] | null
-          status: Database["public"]["Enums"]["financial_installment_status"]
-          title_id: string
-          updated_at: string
-        }
-        Insert: {
-          amount: number
-          created_at?: string
-          due_date: string
-          id?: string
-          installment_no: number
-          payment_date?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          status?: Database["public"]["Enums"]["financial_installment_status"]
-          title_id: string
-          updated_at?: string
-        }
-        Update: {
-          amount?: number
-          created_at?: string
-          due_date?: string
-          id?: string
-          installment_no?: number
-          payment_date?: string | null
-          payment_method?: Database["public"]["Enums"]["payment_method"] | null
-          status?: Database["public"]["Enums"]["financial_installment_status"]
-          title_id?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "financial_installments_title_id_fkey"
-            columns: ["title_id"]
-            isOneToOne: false
-            referencedRelation: "financial_titles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       financial_titles: {
         Row: {
           category_id: string
           created_at: string
           customer_id: string | null
           description: string
+          due_date: string
           id: string
+          installment_no: number | null
           issue_date: string
           kind: Database["public"]["Enums"]["financial_title_kind"]
           notes: string | null
           order_id: string | null
+          payment_date: string | null
+          payment_method: Database["public"]["Enums"]["payment_method"] | null
+          status: Database["public"]["Enums"]["financial_title_status"]
           total_amount: number
           updated_at: string
         }
@@ -177,11 +135,16 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           description: string
+          due_date?: string
           id?: string
+          installment_no?: number | null
           issue_date?: string
           kind: Database["public"]["Enums"]["financial_title_kind"]
           notes?: string | null
           order_id?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          status?: Database["public"]["Enums"]["financial_title_status"]
           total_amount: number
           updated_at?: string
         }
@@ -190,11 +153,16 @@ export type Database = {
           created_at?: string
           customer_id?: string | null
           description?: string
+          due_date?: string
           id?: string
+          installment_no?: number | null
           issue_date?: string
           kind?: Database["public"]["Enums"]["financial_title_kind"]
           notes?: string | null
           order_id?: string | null
+          payment_date?: string | null
+          payment_method?: Database["public"]["Enums"]["payment_method"] | null
+          status?: Database["public"]["Enums"]["financial_title_status"]
           total_amount?: number
           updated_at?: string
         }
@@ -619,8 +587,8 @@ export type Database = {
           created_by: string | null
           from_status: string | null
           id: string
-          installment_id: string | null
           order_id: string
+          title_id: string | null
           to_status: string | null
         }
         Insert: {
@@ -631,8 +599,8 @@ export type Database = {
           created_by?: string | null
           from_status?: string | null
           id?: string
-          installment_id?: string | null
           order_id: string
+          title_id?: string | null
           to_status?: string | null
         }
         Update: {
@@ -643,8 +611,8 @@ export type Database = {
           created_by?: string | null
           from_status?: string | null
           id?: string
-          installment_id?: string | null
           order_id?: string
+          title_id?: string | null
           to_status?: string | null
         }
         Relationships: [
@@ -656,17 +624,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "sale_activities_installment_id_fkey"
-            columns: ["installment_id"]
-            isOneToOne: false
-            referencedRelation: "financial_installments"
-            referencedColumns: ["id"]
-          },
-          {
             foreignKeyName: "sale_activities_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sale_activities_title_id_fkey"
+            columns: ["title_id"]
+            isOneToOne: false
+            referencedRelation: "financial_titles"
             referencedColumns: ["id"]
           },
         ]
@@ -731,6 +699,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      _orders_ensure_simple_receivable: {
+        Args: { p_order: Database["public"]["Tables"]["orders"]["Row"] }
+        Returns: undefined
+      }
       _sales_allowed_transitions: {
         Args: {
           p_from: Database["public"]["Enums"]["order_status"]
@@ -835,50 +807,62 @@ export type Database = {
           isSetofReturn: false
         }
       }
-      mark_installment_paid: {
+      mark_title_paid: {
         Args: {
           p_attachment_path?: string
           p_comment?: string
-          p_installment_id: string
           p_payment_date?: string
           p_payment_method?: Database["public"]["Enums"]["payment_method"]
+          p_title_id: string
         }
         Returns: {
-          amount: number
+          category_id: string
           created_at: string
+          customer_id: string | null
+          description: string
           due_date: string
           id: string
-          installment_no: number
+          installment_no: number | null
+          issue_date: string
+          kind: Database["public"]["Enums"]["financial_title_kind"]
+          notes: string | null
+          order_id: string | null
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
-          status: Database["public"]["Enums"]["financial_installment_status"]
-          title_id: string
+          status: Database["public"]["Enums"]["financial_title_status"]
+          total_amount: number
           updated_at: string
         }
         SetofOptions: {
           from: "*"
-          to: "financial_installments"
+          to: "financial_titles"
           isOneToOne: true
           isSetofReturn: false
         }
       }
-      reverse_installment: {
-        Args: { p_comment: string; p_installment_id: string }
+      reverse_title_payment: {
+        Args: { p_comment: string; p_title_id: string }
         Returns: {
-          amount: number
+          category_id: string
           created_at: string
+          customer_id: string | null
+          description: string
           due_date: string
           id: string
-          installment_no: number
+          installment_no: number | null
+          issue_date: string
+          kind: Database["public"]["Enums"]["financial_title_kind"]
+          notes: string | null
+          order_id: string | null
           payment_date: string | null
           payment_method: Database["public"]["Enums"]["payment_method"] | null
-          status: Database["public"]["Enums"]["financial_installment_status"]
-          title_id: string
+          status: Database["public"]["Enums"]["financial_title_status"]
+          total_amount: number
           updated_at: string
         }
         SetofOptions: {
           from: "*"
-          to: "financial_installments"
+          to: "financial_titles"
           isOneToOne: true
           isSetofReturn: false
         }
@@ -887,8 +871,8 @@ export type Database = {
     Enums: {
       customer_type: "pf" | "pj"
       financial_category_type: "revenue" | "expense"
-      financial_installment_status: "pending" | "paid" | "overdue" | "canceled"
       financial_title_kind: "receivable" | "payable"
+      financial_title_status: "pending" | "paid" | "overdue" | "canceled"
       material_kind: "filament" | "resin"
       order_status:
         | "quote"
@@ -1043,8 +1027,8 @@ export const Constants = {
     Enums: {
       customer_type: ["pf", "pj"],
       financial_category_type: ["revenue", "expense"],
-      financial_installment_status: ["pending", "paid", "overdue", "canceled"],
       financial_title_kind: ["receivable", "payable"],
+      financial_title_status: ["pending", "paid", "overdue", "canceled"],
       material_kind: ["filament", "resin"],
       order_status: [
         "quote",

@@ -4,14 +4,14 @@ import type { Database } from '@/shared/db/database.types'
 
 type OrderStatus = Database['public']['Enums']['order_status']
 type SaleKind = Database['public']['Enums']['sale_kind']
-type InstallmentStatus = Database['public']['Enums']['financial_installment_status']
+type TitleStatus = Database['public']['Enums']['financial_title_status']
 
-/** Mirrors app/sales/utils/installmentStatus — kept here to avoid shared → app imports. */
-function getEffectiveInstallmentStatus(
-  status: InstallmentStatus,
+/** Effective status treating pending+past-due as overdue. */
+function getEffectiveTitleStatus(
+  status: TitleStatus,
   dueDate: string,
   today: string
-): InstallmentStatus | 'overdue' {
+): TitleStatus | 'overdue' {
   if (status === 'pending' && dueDate < today) return 'overdue'
   return status
 }
@@ -82,12 +82,12 @@ export interface ListSalesResult {
   total: number
 }
 
-export interface SaleInstallmentRow {
+export interface SaleTitleRow {
   id: string
-  amount: number
+  total_amount: number
   due_date: string
   payment_date: string | null
-  status: InstallmentStatus
+  status: TitleStatus
 }
 
 export interface SaleOrderRow {
@@ -98,12 +98,7 @@ export interface SaleOrderRow {
   issue_date: string
   description: string | null
   customers: { id: string; full_name: string; email: string | null } | null
-  financial_titles:
-    | Array<{
-        id: string
-        financial_installments: SaleInstallmentRow[] | null
-      }>
-    | null
+  financial_titles: SaleTitleRow[] | null
 }
 
 const DEFAULT_PAGE_SIZE = 20
@@ -122,13 +117,10 @@ const SALE_SELECT = `
   ),
   financial_titles (
     id,
-    financial_installments (
-      id,
-      amount,
-      due_date,
-      payment_date,
-      status
-    )
+    total_amount,
+    due_date,
+    payment_date,
+    status
   )
 `
 
@@ -148,33 +140,30 @@ function startOfDayIso(date: string): string {
   return `${date}T00:00:00.000Z`
 }
 
-function collectInstallments(row: SaleOrderRow): SaleInstallmentRow[] {
-  return (row.financial_titles ?? []).flatMap((title) => title.financial_installments ?? [])
-}
-
 export function mapSaleListItem(row: SaleOrderRow, today: string): SaleListItem {
-  const installments = collectInstallments(row)
+  const titles = row.financial_titles ?? []
   let paidAmount = 0
   let openAmount = 0
   let overdueAmount = 0
   let nextDueDate: string | null = null
 
-  for (const inst of installments) {
-    const effective = getEffectiveInstallmentStatus(inst.status, inst.due_date, today)
+  for (const title of titles) {
+    const effective = getEffectiveTitleStatus(title.status, title.due_date, today)
+    const amount = Number(title.total_amount)
     if (effective === 'paid') {
-      paidAmount += Number(inst.amount)
+      paidAmount += amount
       continue
     }
     if (effective === 'canceled') continue
 
     if (effective === 'overdue') {
-      overdueAmount += Number(inst.amount)
+      overdueAmount += amount
     } else {
-      openAmount += Number(inst.amount)
+      openAmount += amount
     }
 
-    if (nextDueDate === null || inst.due_date < nextDueDate) {
-      nextDueDate = inst.due_date
+    if (nextDueDate === null || title.due_date < nextDueDate) {
+      nextDueDate = title.due_date
     }
   }
 
@@ -193,7 +182,7 @@ export function mapSaleListItem(row: SaleOrderRow, today: string): SaleListItem 
       email: customer?.email ?? null,
     },
     paymentSummary: {
-      hasTitle: (row.financial_titles?.length ?? 0) > 0,
+      hasTitle: titles.length > 0,
       paidAmount,
       openAmount,
       overdueAmount,
@@ -213,9 +202,9 @@ export function computeSaleTotals(rows: SaleOrderRow[], today: string): SaleTota
       totalSales += Number(row.total_amount)
     }
 
-    for (const inst of collectInstallments(row)) {
-      const effective = getEffectiveInstallmentStatus(inst.status, inst.due_date, today)
-      const amount = Number(inst.amount)
+    for (const title of row.financial_titles ?? []) {
+      const effective = getEffectiveTitleStatus(title.status, title.due_date, today)
+      const amount = Number(title.total_amount)
       if (effective === 'paid') totalPaid += amount
       else if (effective === 'overdue') totalOverdue += amount
       else if (effective === 'pending') totalPayable += amount
