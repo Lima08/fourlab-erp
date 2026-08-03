@@ -14,24 +14,18 @@ export default defineConfig({
       registerType: 'autoUpdate',
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        runtimeCaching: [
-          {
-            urlPattern: /\/campo\/.*/,
-            handler: 'CacheFirst',
-            options: { cacheName: 'campo-assets' },
-          },
-        ],
       },
       manifest: {
-        name: 'Kadu - Vistoria Tecnica',
-        short_name: 'Kadu',
-        start_url: '/campo',
+        name: 'Fourlab 3D — ERP',
+        short_name: 'Fourlab',
+        description: 'ERP para gestão da Fourlab — impressão 3D',
+        start_url: '/',
         display: 'standalone',
-        background_color: '#f8fafc',
+        background_color: '#000000',
         theme_color: '#f8fafc',
         icons: [
-          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+          { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
         ],
       },
     }),
@@ -63,9 +57,6 @@ export default defineConfig({
           }
           if (id.includes('node_modules/react-router') || id.includes('node_modules/@remix-run')) {
             return 'vendor-router'
-          }
-          if (id.includes('node_modules/dexie')) {
-            return 'vendor-db'
           }
           if (id.includes('node_modules/@supabase')) {
             return 'vendor-supabase'

@@ -1,193 +1,81 @@
-# Architecture
+# Architecture — Fourlab ERP
 
-**Padrão:** Offline-First PWA com sync queue unidirecional
+Shell React + Supabase online-first. Módulos **Clientes** e **Dashboard (Início)** implementados; estoque/produção UI em roadmap.
 
-## Visão Geral
+## Visão geral
 
 ```
-┌──────────────────────────────────────────────────────┐
-│                    Browser (PWA)                     │
-│                                                      │
-│  ┌─────────────┐    ┌──────────────┐                 │
-│  │  React UI   │◄──►│  Dexie       │  IndexedDB      │
-│  │  (campo/)   │    │  VistoriaDB  │  (source of     │
-│  └──────┬──────┘    └──────┬───────┘   truth)        │
-│         │                  │                         │
-│         │           ┌──────▼───────┐                 │
-│         └──────────►│  syncService │                 │
-│                     │  + queue     │                 │
-│                     └──────┬───────┘                 │
-└────────────────────────────┼────────────────────────┘
-                             │ HTTPS (quando online)
-                    ┌────────▼────────┐
-                    │    Supabase     │
-                    │  PostgreSQL +   │
-                    │  Auth + Storage │
-                    └─────────────────┘
+Browser (PWA)
+  └── React app
+        ├── auth/          Login + password flows
+        ├── app/           Guard + layout + home/dashboard + customers
+        └── shared/
+              ├── db/supabase (+ database.types.ts)
+              ├── stores/authStore + AuthProvider
+              ├── services/profile*, customerService, dashboardService, saleService
+              └── providers/QueryProvider
+                    └── Supabase Auth + Postgres (RLS)
 ```
 
 ## Módulos
 
-### `src/campo/` — App de vistoria (field work)
+### `src/app/`
 
-O módulo principal. Contém tudo relacionado à execução de vistorias em campo.
+Shell autenticado: `AppGuard`, `AppLayout` (header + bottom nav mobile), `HomePage` (dashboard), módulo `customers/`, pasta `dashboard/` (hooks + seções).
 
-- `pages/` — rotas lazy (ProjectsPage, InspectionPage, LocationPage, etc.)
-- `components/projetos/` — componentes de listagem e detalhamento de projetos
-- `hooks/` — lógica de negócio encapsulada em hooks (useProjects, useItemEdit, etc.)
-- `utils/inspectionStats.ts` — cálculos de progresso e status derivados
+**Navegação:** bottom nav `< md`; links equivalentes no header `md+` (`/inicio`, `/clientes`).
 
-### `src/auth/` — Autenticação
+### `src/app/dashboard/`
 
-Apenas `LoginPage.tsx`. Estado de auth vive em `shared/`.
+Dashboard read-only em `/inicio`: pulso financeiro (caixa), vendas + Recharts (6 meses), funil de produção, últimos aprovados.
 
-### `src/shared/` — Infraestrutura compartilhada
+- **I/O:** `shared/services/dashboardService.ts`
+- **Agregações:** `dashboard/utils/dashboardAggregates.ts`
+- **Doc operacional:** `docs/domain/fluxo-caixa-e-dashboard.md`
 
-- `db/dexie.ts` — definição do banco local (entidades, índices, versões)
-- `db/supabase.ts` — cliente Supabase (criado com env vars)
-- `db/database.types.ts` — tipos gerados pelo Supabase CLI
-- `services/sync/` — syncService, queueProcessor, mappers
-- `hooks/` — useAuth, useConnectivity, useStorageMonitor
-- `stores/authStore.ts` — Zustand store com user + sessionExpired
-- `providers/` — AuthProvider, QueryProvider
-- `utils/lazyWithRetry.ts` — wrapper de lazy import com retry
+Financeiro achatado: `financial_titles` carrega `due_date` / `payment_date` / `status` (sem `financial_installments`). Triggers + RPCs de vendas materializam títulos ao aprovar.
 
-### `src/components/ui/` — Design system primitives
+### `src/app/customers/`
 
-Componentes genéricos reutilizáveis (badge, button, dialog, icon, progress, sonner).
+Domínio Clientes: listagem paginada, formulários PF/PJ, ficha com pedidos read-only, ativar/inativar.
 
-## Padrões Identificados
+- **Pages:** `CustomersPage`, `CustomerNewPage`, `CustomerDetailPage`, `CustomerEditPage`
+- **Hooks:** React Query (`useCustomers`, `useCustomer`, `useCustomerOrders`, `useCustomerMutations`)
+- **Schema:** Zod em `schemas/customerFormSchema.ts`
+- **I/O:** `shared/services/customerService.ts`
 
-### Offline-First com Sync Queue
+### `src/auth/`
 
-**Local:** Toda escrita vai direto para Dexie.
-**Remote:** Uma entrada em `syncQueue` é enfileirada para cada mutação.
-**Drain:** `FieldLayout` chama `drainQueue()` no mount (se online) e no evento `online`; mutex evita concorrência; processa snapshot da fila em batches de 10.
-**Dead Letter:** Após 3 falhas, move para `deadLetterQueue` + toast; item dead-lettered recebe `syncedAt: null`.
-**Pending sets:** `queuePending.ts` parseia a fila por tipo (item/location/project/evidence) para o pull não stompar edições locais.
+Páginas de login, recuperação, reset e ativação de conta. Usam Supabase Auth + `profiles`.
 
-Exemplo: `src/campo/hooks/useItemEdit.ts` → `enqueueItemUpdate()` → `queueProcessor.ts` → Supabase
+### `src/shared/`
 
-### Mídia híbrida (path + signed URL)
+Infra compartilhada: client Supabase, auth Zustand, React Query, profile/customer services, BootSplash, navegação, utils (`brazilianDocuments`, `fetchAddressByCep`).
 
-`downloadProject` / `pullUpdates` gravam metadata + `storagePath` (sem baixar blobs). Online: `EvidenceCard` usa signed URL. Offline: ação “Baixar mídias para offline” (`downloadProjectMedia`) hidrata blobs sob demanda. Capturas locais continuam com `blob` no Dexie até sync.
+### `src/components/ui/`
 
-### Live Queries Reativas
+Design system headless (Base UI + Tailwind + CVA). Sem Supabase, sem store.
 
-Hooks usam `useLiveQuery` (dexie-react-hooks) para re-renderizar automaticamente quando dados locais mudam. Não há `useEffect` de polling — a reatividade vem do Dexie.
+## Auth
 
-### Separação Hook / Componente
+1. `AuthProvider` hidrata sessão via `supabase.auth.onAuthStateChange`
+2. `AppGuard` exige usuário; convite pendente → `/ativar-conta`
+3. `RootRedirect` (`/`) → `/inicio` se autenticado, senão `/login`
+4. Perfil em `public.profiles` — baseline **sem RBAC** (`is_active` only; sem `role`/`status`)
 
-Lógica de negócio encapsulada em hooks em `campo/hooks/`. Componentes são puramente visuais. Exemplo: `useItemEdit.ts` expõe uma interface rica; `ItemEditModal.tsx` apenas renderiza.
+## Dados
 
-### Mapeadores bidireccionais
+- **Fonte da verdade:** Postgres via Supabase client (anon key + RLS).
+- Sem IndexedDB/Dexie nesta base.
+- Tipos gerados em `src/shared/db/database.types.ts` (`npm run db:types`).
+- `customers` + `orders.customer_id` para histórico read-only na ficha.
 
-`src/shared/services/sync/mappers.ts` converte entre formato remoto (snake_case, Supabase row) e local (camelCase, Dexie entity).
+## PWA
 
-### Lazy Loading com Retry
+- `vite-plugin-pwa`, `registerType: 'autoUpdate'`
+- Manifest: `Fourlab 3D — ERP`, `start_url: '/'`, `display: standalone`
+- Precache de assets estáticos; dados de negócio não vão para o SW
 
-`lazyWithRetry` encapsula `React.lazy` com retry automático via `?reload=N` para lidar com falhas de rede em chunks.
+## Admin users
 
-## Fluxo de Dados — Download de Projeto
-
-```
-ProjectsPage → downloadProject(id)
-  → supabase.from('projects/locations/items/evidence/project_sync_state') [paralelo]
-  → mapear evidence com storagePath (sem hydrate de blob)
-  → db.transaction([clients, projects, locations, items, evidence])
-  → recomputeProjectProgress(id)
-```
-
-## Fluxo de Dados — Edição de Item
-
-```
-ItemEditModal → useItemEdit.handleSave()
-  → db.items.update(..., syncedAt: null)  [local imediato]
-  → db.evidence.add(..., storagePath: null) [opcional]
-  → enqueueItemUpdate(item) / enqueueEvidenceAdd  [sync queue]
-  → recomputeProjectProgress [atualiza contadores no projeto]
-```
-
-## Fluxo de Sincronização Remota
-
-```
-drainQueue() [FieldLayout: mount online + evento online; também sync manual]
-  → mutex: uma execução por vez
-  → snapshot de IDs da fila; processa em batches de 10
-  → processEntry(entry) → Storage upsert (mídia) + Postgres upsert
-  → db.syncQueue.delete(entry.id) + markSyncedAt()
-  → em erro: attempts++; após 3 → deadLetterQueue + toast
-```
-
-## Detecção de Updates Remotos
-
-```
-checkForUpdates(projectId)
-  → supabase.from('project_sync_state').select('last_modified_at')
-  → compara com project.syncedAt
-  → se remoto > local: project.updateState = 'update_available'
-```
-
-## Autenticação
-
-```
-AuthProvider (useAuth hook)
-  → supabase.auth.getSession() → setUser
-  → supabase.auth.onAuthStateChange → setUser / setSessionExpired
-  → Zustand authStore persiste user
-FieldGuard → redireciona para /login se !user
-```
-
-## Code Organization
-
-**Approach:** Feature-based (campo, auth, shared) + layer-based dentro de cada feature (pages, components, hooks, utils)
-**Module boundaries:** `shared/` é consumido por todos; `campo/` não importa de `auth/`; sem imports circulares conhecidos
-
----
-
-## Banco local — Migrações Dexie
-
-Regra: só `this.version(N+1)`. Nunca editar versão existente — dispositivos em campo têm dados reais e migração destrutiva perde vistorias.
-
-```ts
-this.version(2)
-  .stores({ projects: 'id, status, downloadedAt, downloadState' })
-  .upgrade(async (tx) => {
-    await tx
-      .table('projects')
-      .toCollection()
-      .modify((p) => {
-        p.downloadState = p.downloadedAt ? 'device' : 'cloud'
-      })
-  })
-```
-
-Coordenar migrações entre épicos. `upgrade()` obrigatório quando dados existentes precisam ser transformados.
-
----
-
-## PWA — Service Worker e Cache
-
-Configuração: `vite.config.ts` via `vite-plugin-pwa` + Workbox.
-
-| Camada                                         | Estratégia                       |
-| ---------------------------------------------- | -------------------------------- |
-| App shell / assets estáticos                   | Precache (lista gerada no build) |
-| Rotas `/campo/*`                               | `CacheFirst` (`campo-assets`)    |
-| Dados de negócio (projetos, itens, evidências) | IndexedDB via Dexie — fora do SW |
-| Endpoints autenticados do Supabase             | Não cachear no SW                |
-
-Regra: cache de assets = SW. Persistência de dados = Dexie + `syncQueue`. Nunca cachear respostas autenticadas do Supabase no SW.
-
-**Atualização:** `autoUpdate` — nova versão baixa em background, assume no próximo carregamento sem prompt.
-
----
-
-## PWA — Quota e armazenamento persistente
-
-Hook: `src/shared/hooks/useStorageMonitor.ts`
-
-- `navigator.storage.persist()` na primeira execução — evita descarte silencioso pelo browser.
-- `navigator.storage.estimate()` — expõe `usageBytes`, `quotaBytes`, `usagePercent`, `isAlmostFull` (> 80%).
-- Capacidade-alvo: ≥ 200 fotos e 5 vídeos por projeto.
-- `QuotaExceededError`: avisar sem bloquear vistoria — nunca interromper o fluxo de campo.
+Edge Functions `invite-user` / `update-user` + services em `shared/services/profile*`. UI de administração será reintroduzida nas features ERP.

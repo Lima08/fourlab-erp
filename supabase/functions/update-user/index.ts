@@ -4,19 +4,12 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts'
 import { EdgeError, handleEdgeError } from '../_shared/errors.ts'
 import { createSupabaseAdmin } from '../_shared/supabaseAdmin.ts'
 
-const profileRoleSchema = z.enum(['cliente', 'admin'])
-
 const updateUserSchema = z.object({
   userId: z.string().uuid(),
   fullName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().min(10),
-  role: profileRoleSchema,
 })
-
-function isLastAdminError(error: { message?: string; code?: string }): boolean {
-  return error.code === 'P0001' || (error.message?.includes('assert_not_last_admin') ?? false)
-}
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req)
@@ -37,7 +30,7 @@ Deno.serve(async (req) => {
       throw new EdgeError('VALIDATION_ERROR', 400, 'Dados inválidos')
     }
 
-    const { userId, fullName, email, phone, role } = parsed.data
+    const { userId, fullName, email, phone } = parsed.data
     const normalizedEmail = email.trim().toLowerCase()
 
     const { data: existingProfile, error: fetchError } = await adminClient
@@ -77,15 +70,11 @@ Deno.serve(async (req) => {
         full_name: fullName.trim(),
         email: normalizedEmail,
         phone,
-        role,
         updated_at: now,
       })
       .eq('id', userId)
 
     if (updateError) {
-      if (isLastAdminError(updateError)) {
-        throw new EdgeError('LAST_ADMIN', 400, 'Não é possível — este é o único administrador.')
-      }
       throw updateError
     }
 

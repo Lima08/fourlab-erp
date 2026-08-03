@@ -3,25 +3,19 @@ import { createBrowserRouter } from 'react-router-dom'
 import { BootSplash } from '@/shared/components/BootSplash'
 import { lazyWithRetry } from '@/shared/utils/lazyWithRetry'
 import RootRedirect from '@/shared/navigation/RootRedirect'
-import DashboardPage from './plataforma/pages/DashboardPage'
-import FieldGuard from '@/campo/FieldGuard'
-import FieldLayout from '@/campo/FieldLayout'
-import PlatformPlaceholderPage from '@/plataforma/components/PlatformPlaceholderPage'
 import NotFound from './shared/components/NotFound'
+import AppGuard from '@/app/AppGuard'
+import AppLayout from '@/app/AppLayout'
 
-const ProjectsPage = lazyWithRetry(() => import('@/campo/pages/ProjectsPage'))
-const InspectionPage = lazyWithRetry(() => import('@/campo/pages/InspectionPage'))
-const InspectionSummaryPage = lazyWithRetry(() => import('@/campo/pages/InspectionSummaryPage'))
-const LocationPage = lazyWithRetry(() => import('@/campo/pages/LocationPage'))
-const PreferencesPage = lazyWithRetry(() => import('@/campo/pages/PreferencesPage'))
-const MyAccountPage = lazyWithRetry(() => import('@/campo/pages/MyAccountPage'))
+const HomePage = lazyWithRetry(() => import('@/app/pages/HomePage'))
+const CustomersPage = lazyWithRetry(() => import('@/app/customers/pages/CustomersPage'))
+const CustomerNewPage = lazyWithRetry(() => import('@/app/customers/pages/CustomerNewPage'))
+const CustomerDetailPage = lazyWithRetry(() => import('@/app/customers/pages/CustomerDetailPage'))
+const CustomerEditPage = lazyWithRetry(() => import('@/app/customers/pages/CustomerEditPage'))
 const LoginPage = lazyWithRetry(() => import('@/auth/LoginPage'))
 const ForgotPasswordPage = lazyWithRetry(() => import('@/auth/ForgotPasswordPage'))
 const ActivateAccountPage = lazyWithRetry(() => import('@/auth/ActivateAccountPage'))
 const ResetPasswordPage = lazyWithRetry(() => import('@/auth/ResetPasswordPage'))
-const PlatformGuard = lazyWithRetry(() => import('@/plataforma/PlatformGuard'))
-const PlatformLayout = lazyWithRetry(() => import('@/plataforma/PlatformLayout'))
-const UsersPage = lazyWithRetry(() => import('@/plataforma/pages/UsersPage'))
 
 const suspend = (element: React.ReactNode) => (
   <Suspense fallback={<BootSplash />}>{element}</Suspense>
@@ -30,41 +24,16 @@ const suspend = (element: React.ReactNode) => (
 export const router = createBrowserRouter([
   { path: '/', element: <RootRedirect /> },
   {
-    element: <FieldGuard />,
+    element: <AppGuard />,
     children: [
       {
-        path: '/campo',
-        element: <FieldLayout />,
+        element: <AppLayout />,
         children: [
-          { index: true, element: suspend(<ProjectsPage />) },
-          { path: 'vistoria/:projectId', element: suspend(<InspectionPage />) },
-          { path: 'vistoria/:projectId/local/:locationId', element: suspend(<LocationPage />) },
-          { path: 'vistoria/:projectId/resumo', element: suspend(<InspectionSummaryPage />) },
-          { path: 'preferencias', element: suspend(<PreferencesPage />) },
-          { path: 'minha-conta', element: suspend(<MyAccountPage />) },
-        ],
-      },
-    ],
-  },
-  {
-    element: suspend(<PlatformGuard />),
-    children: [
-      {
-        path: '/plataforma',
-        element: suspend(<PlatformLayout />),
-        children: [
-          {
-            index: true,
-            element: <DashboardPage />,
-          },
-          {
-            path: 'projetos',
-            element: <PlatformPlaceholderPage title="Administração de projetos" />,
-          },
-          {
-            path: 'usuarios',
-            element: suspend(<UsersPage />),
-          },
+          { path: '/inicio', element: suspend(<HomePage />) },
+          { path: '/clientes', element: suspend(<CustomersPage />) },
+          { path: '/clientes/novo', element: suspend(<CustomerNewPage />) },
+          { path: '/clientes/:id', element: suspend(<CustomerDetailPage />) },
+          { path: '/clientes/:id/editar', element: suspend(<CustomerEditPage />) },
         ],
       },
     ],

@@ -1,6 +1,6 @@
 import { lazy, type ComponentType } from 'react'
 
-export const CHUNK_RELOAD_KEY = 'soraia-chunk-reload'
+export const CHUNK_RELOAD_KEY = 'fourlab-chunk-reload'
 
 const CHUNK_ERROR_PATTERN =
   /Failed to fetch dynamically imported module|Importing a module script failed/

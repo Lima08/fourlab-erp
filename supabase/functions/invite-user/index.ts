@@ -4,27 +4,13 @@ import { handleCors, jsonResponse } from '../_shared/cors.ts'
 import { EdgeError, handleEdgeError } from '../_shared/errors.ts'
 import { createSupabaseAdmin } from '../_shared/supabaseAdmin.ts'
 
-const profileRoleSchema = z.enum(['cliente', 'admin'])
-
-const createSchema = z
-  .object({
-    mode: z.literal('create'),
-    fullName: z.string().min(2),
-    email: z.string().email(),
-    phone: z.string().min(10),
-    role: profileRoleSchema,
-    clientId: z.string().uuid().optional(),
-    redirectTo: z.string().url().optional(),
-  })
-  .superRefine((data, ctx) => {
-    if (data.role === 'cliente' && !data.clientId) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'client_id obrigatório para usuários cliente',
-        path: ['clientId'],
-      })
-    }
-  })
+const createSchema = z.object({
+  mode: z.literal('create'),
+  fullName: z.string().min(2),
+  email: z.string().email(),
+  phone: z.string().min(10),
+  redirectTo: z.string().url().optional(),
+})
 
 const resendSchema = z.object({
   mode: z.literal('resend'),
@@ -81,7 +67,6 @@ async function handleCreate(
       data: {
         full_name: body.fullName.trim(),
         phone: body.phone,
-        role: body.role,
       },
       redirectTo,
     }
@@ -104,31 +89,14 @@ async function handleCreate(
     throw new EdgeError('INTERNAL', 500, 'Erro interno do servidor')
   }
 
-  let clientId: string | null = null
-  if (body.role === 'cliente') {
-    const { data: client, error: clientError } = await adminClient
-      .from('clients')
-      .select('id')
-      .eq('id', body.clientId!)
-      .maybeSingle()
-
-    if (clientError) throw clientError
-    if (!client) {
-      throw new EdgeError('VALIDATION_ERROR', 400, 'Cliente não encontrado')
-    }
-
-    clientId = client.id
-  }
-
   const now = new Date().toISOString()
   const { error: insertError } = await adminClient.from('profiles').insert({
     id: userId,
     full_name: body.fullName.trim(),
     email,
     phone: body.phone,
-    role: body.role,
-    status: 'convite_pendente',
-    client_id: clientId,
+    is_active: false,
+    activated_at: null,
     created_at: now,
     updated_at: now,
   })
@@ -150,7 +118,7 @@ async function handleResend(
 ) {
   const { data: profile, error: profileError } = await adminClient
     .from('profiles')
-    .select('email, status')
+    .select('email, is_active, activated_at')
     .eq('id', body.userId)
     .maybeSingle()
 
@@ -160,7 +128,7 @@ async function handleResend(
     throw new EdgeError('NOT_FOUND', 404, 'Usuário não encontrado')
   }
 
-  if (profile.status !== 'convite_pendente') {
+  if (profile.activated_at !== null) {
     throw new EdgeError('INVALID_STATUS', 400, 'Convite não pendente')
   }
 

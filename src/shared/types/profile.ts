@@ -1,13 +1,11 @@
-export type ProfileRole = 'cliente' | 'admin'
-export type ProfileStatus = 'ativo' | 'convite_pendente' | 'suspenso'
-
 export interface Profile {
   id: string
   fullName: string
   email: string
   phone: string | null
-  role: ProfileRole
-  status: ProfileStatus
+  isActive: boolean
+  /** Null until the invite activation flow succeeds; kept after admin deactivation. */
+  activatedAt: string | null
   createdAt: string
   updatedAt: string
 }

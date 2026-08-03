@@ -11,11 +11,15 @@ export function useCurrentProfile() {
     enabled: !!user,
   })
 
+  const profile = query.data ?? null
+  const isPendingInvite = profile !== null && profile.activatedAt === null
+  const isDeactivated =
+    profile !== null && profile.activatedAt !== null && !profile.isActive
+
   return {
-    profile: query.data ?? null,
-    isAdmin: query.data?.role === 'admin',
-    isSuspended: query.data?.status === 'suspenso',
-    isPendingInvite: query.data?.status === 'convite_pendente',
+    profile,
+    isPendingInvite,
+    isDeactivated,
     isLoading: query.isLoading,
     isError: query.isError,
   }

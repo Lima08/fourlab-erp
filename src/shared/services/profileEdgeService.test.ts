@@ -17,8 +17,7 @@ beforeEach(() => {
 describe('mapEdgeErrorMessage', () => {
   it('mapeia códigos conhecidos para PT-BR', () => {
     expect(mapEdgeErrorMessage('EMAIL_EXISTS')).toBe('E-mail já cadastrado')
-    expect(mapEdgeErrorMessage('NOT_ADMIN')).toBe('Sem permissão')
-    expect(mapEdgeErrorMessage('LAST_ADMIN')).toBe('Não é possível — este é o único administrador.')
+    expect(mapEdgeErrorMessage('NOT_AUTHORIZED')).toBe('Sem permissão')
   })
 
   it('usa fallback quando código é desconhecido', () => {
@@ -38,8 +37,6 @@ describe('inviteUser', () => {
       fullName: 'Maria Souza',
       email: 'maria@example.com',
       phone: '(11) 98765-4321',
-      role: 'cliente',
-      clientId: '11111111-1111-4111-8111-111111111111',
     })
 
     expect(result).toEqual({ success: true, data: { id: 'user-new' } })
@@ -49,33 +46,6 @@ describe('inviteUser', () => {
         fullName: 'Maria Souza',
         email: 'maria@example.com',
         phone: '(11) 98765-4321',
-        role: 'cliente',
-        clientId: '11111111-1111-4111-8111-111111111111',
-        redirectTo: `${window.location.origin}/ativar-conta`,
-      },
-    })
-  })
-
-  it('não envia clientId para convite de admin', async () => {
-    vi.mocked(supabase.functions.invoke).mockResolvedValue({
-      data: { id: 'user-admin' },
-      error: null,
-    })
-
-    await inviteUser({
-      fullName: 'Ana Admin',
-      email: 'ana@example.com',
-      phone: '(11) 98765-4321',
-      role: 'admin',
-    })
-
-    expect(supabase.functions.invoke).toHaveBeenCalledWith('invite-user', {
-      body: {
-        mode: 'create',
-        fullName: 'Ana Admin',
-        email: 'ana@example.com',
-        phone: '(11) 98765-4321',
-        role: 'admin',
         redirectTo: `${window.location.origin}/ativar-conta`,
       },
     })
@@ -91,8 +61,6 @@ describe('inviteUser', () => {
       fullName: 'Maria Souza',
       email: 'maria@example.com',
       phone: '(11) 98765-4321',
-      role: 'cliente',
-      clientId: '11111111-1111-4111-8111-111111111111',
     })
 
     expect(result).toEqual({
@@ -150,7 +118,6 @@ describe('updateUser', () => {
       fullName: 'Ana Silva',
       email: 'ana@example.com',
       phone: '(11) 91234-5678',
-      role: 'admin',
     })
 
     expect(result).toEqual({ success: true, data: undefined })
@@ -160,32 +127,7 @@ describe('updateUser', () => {
         fullName: 'Ana Silva',
         email: 'ana@example.com',
         phone: '(11) 91234-5678',
-        role: 'admin',
       },
-    })
-  })
-
-  it('mapeia erro LAST_ADMIN', async () => {
-    vi.mocked(supabase.functions.invoke).mockResolvedValue({
-      data: {
-        error: 'Não é possível — este é o único administrador.',
-        code: 'LAST_ADMIN',
-      },
-      error: { message: 'Edge Function returned a non-2xx status code' },
-    } as unknown as Awaited<ReturnType<typeof supabase.functions.invoke>>)
-
-    const result = await updateUser({
-      userId: 'user-1',
-      fullName: 'Ana Silva',
-      email: 'ana@example.com',
-      phone: '(11) 91234-5678',
-      role: 'cliente',
-    })
-
-    expect(result).toEqual({
-      success: false,
-      error: 'Não é possível — este é o único administrador.',
-      code: 'LAST_ADMIN',
     })
   })
 })

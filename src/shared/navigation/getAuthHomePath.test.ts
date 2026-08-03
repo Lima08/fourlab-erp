@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { isUserManagementEnabled } from '@/shared/config/features'
+import { describe, it, expect } from 'vitest'
 import {
   getAuthHomePath,
   getInviteRedirectTo,
@@ -7,26 +6,9 @@ import {
   preserveAuthRedirectSuffix,
 } from './getAuthHomePath'
 
-vi.mock('@/shared/config/features', () => ({
-  isUserManagementEnabled: vi.fn(() => true),
-}))
-
 describe('getAuthHomePath', () => {
-  beforeEach(() => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(true)
-  })
-
-  it('envia admin para /plataforma', () => {
-    expect(getAuthHomePath('admin')).toBe('/plataforma')
-  })
-
-  it('envia admin para /campo quando gestão de usuários está desativada', () => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(false)
-    expect(getAuthHomePath('admin')).toBe('/campo')
-  })
-
-  it('envia cliente para /campo', () => {
-    expect(getAuthHomePath('cliente')).toBe('/campo')
+  it('sempre envia para /inicio', () => {
+    expect(getAuthHomePath()).toBe('/inicio')
   })
 })
 

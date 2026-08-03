@@ -33,7 +33,7 @@ describe('isStaleChunkLoadError', () => {
     expect(
       isStaleChunkLoadError(
         new TypeError(
-          'Failed to fetch dynamically imported module: http://localhost:4173/assets/InspectionPage-P3nfusC3.js'
+          'Failed to fetch dynamically imported module: http://localhost:4173/assets/HomePage-P3nfusC3.js'
         )
       )
     ).toBe(true)
@@ -64,7 +64,7 @@ describe('importWithRetry', () => {
   it('recarrega página na primeira falha de chunk stale', async () => {
     const deps = makeDeps()
     const chunkError = new TypeError(
-      'Failed to fetch dynamically imported module: http://localhost:4173/assets/InspectionPage-P3nfusC3.js'
+      'Failed to fetch dynamically imported module: http://localhost:4173/assets/HomePage-P3nfusC3.js'
     )
 
     void importWithRetry(() => Promise.reject(chunkError), deps)
@@ -78,7 +78,7 @@ describe('importWithRetry', () => {
   it('propaga erro na segunda falha de chunk stale', async () => {
     const deps = makeDeps({ getRetryFlag: vi.fn(() => true) })
     const chunkError = new TypeError(
-      'Failed to fetch dynamically imported module: http://localhost:4173/assets/InspectionPage-P3nfusC3.js'
+      'Failed to fetch dynamically imported module: http://localhost:4173/assets/HomePage-P3nfusC3.js'
     )
 
     await expect(importWithRetry(() => Promise.reject(chunkError), deps)).rejects.toThrow(

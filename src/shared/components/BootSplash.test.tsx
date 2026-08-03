@@ -8,13 +8,13 @@ afterEach(() => {
 })
 
 describe('BootSplash', () => {
-  it('exibe a marca Kadu e o subtítulo em fundo claro', () => {
+  it('exibe a marca Fourlab e o subtítulo em fundo claro', () => {
     render(<BootSplash />)
 
-    expect(screen.getByRole('status', { name: /Carregando Kadu/i })).toBeInTheDocument()
+    expect(screen.getByRole('status', { name: /Carregando Fourlab/i })).toBeInTheDocument()
     expect(screen.getByRole('status')).toHaveClass('bg-industrial-50')
-    expect(screen.getByText('Kadu')).toBeInTheDocument()
-    expect(screen.getByText('Vistoria Técnica')).toBeInTheDocument()
+    expect(screen.getByText('Fourlab')).toBeInTheDocument()
+    expect(screen.getByText('ERP · Impressão 3D')).toBeInTheDocument()
   })
 
   it('fica transparente e some o texto quando fading', () => {
@@ -23,7 +23,7 @@ describe('BootSplash', () => {
 
     expect(status).toHaveAttribute('data-fading', 'true')
     expect(status).toHaveClass('bg-transparent')
-    expect(screen.getByText('Kadu').parentElement).toHaveClass('opacity-0')
+    expect(screen.getByText('Fourlab').parentElement).toHaveClass('opacity-0')
   })
 
   it('usa rounded-xl padronizado no logo', () => {

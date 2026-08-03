@@ -1,17 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/shared/stores/authStore'
 import { useCurrentProfile } from '@/shared/hooks/useCurrentProfile'
-import type { ProfileRole } from '@/shared/types/profile'
 import { supabase } from '@/shared/db/supabase'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
-import { getPlatformNavItems } from '@/shared/navigation/platformNav'
-
-const ROLE_LABELS: Record<ProfileRole, string> = {
-  admin: 'Administrador',
-  cliente: 'Cliente',
-}
 
 function getInitials(name: string): string {
   return name
@@ -45,19 +38,17 @@ interface MenuItemProps {
   icon: string
   label: string
   onClick: () => void
-  active?: boolean
   destructive?: boolean
 }
 
-function MenuItem({ icon, label, onClick, active, destructive }: MenuItemProps) {
+function MenuItem({ icon, label, onClick, destructive }: MenuItemProps) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={cn(
         'mx-2 flex w-[calc(100%-1rem)] items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[15px] font-semibold transition-colors',
-        active && 'bg-industrial-50 text-industrial-950',
-        !active && !destructive && 'text-industrial-950 hover:bg-industrial-50',
+        !destructive && 'text-industrial-950 hover:bg-industrial-50',
         destructive && 'font-extrabold text-red-700 hover:bg-red-50'
       )}
     >
@@ -66,7 +57,6 @@ function MenuItem({ icon, label, onClick, active, destructive }: MenuItemProps) 
         className={cn('shrink-0 text-[20px]', destructive ? 'text-red-700' : 'text-industrial-700')}
       />
       <span className="flex-1">{label}</span>
-      {active && <Icon name="check" className="text-safety-green shrink-0 text-[18px]" />}
     </button>
   )
 }
@@ -74,8 +64,7 @@ function MenuItem({ icon, label, onClick, active, destructive }: MenuItemProps) 
 export function UserMenu() {
   const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
-  const location = useLocation()
-  const { profile, isAdmin } = useCurrentProfile()
+  const { profile } = useCurrentProfile()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -93,12 +82,6 @@ export function UserMenu() {
   const displayName = fullName ?? email.split('@')[0] ?? 'Usuário'
   const initials = fullName ? getInitials(fullName) : displayName.slice(0, 2).toUpperCase()
   const shortName = fullName ? getShortName(fullName) : displayName
-  const roleLabel = profile?.role ? ROLE_LABELS[profile.role] : 'Inspetor'
-
-  function closeAndNavigate(to: string) {
-    setOpen(false)
-    navigate(to)
-  }
 
   async function handleLogout() {
     setOpen(false)
@@ -129,42 +112,11 @@ export function UserMenu() {
         >
           <div className="px-5 py-4">
             <div className="text-industrial-950 text-[16px] font-extrabold">{displayName}</div>
-            <div className="text-safety-green text-[13px] font-semibold">{roleLabel}</div>
-          </div>
-
-          {isAdmin && (
-            <>
-              <MenuDivider />
-              <MenuSectionLabel>Plataforma</MenuSectionLabel>
-              <div className="pb-1">
-                {getPlatformNavItems().map((item) => (
-                  <MenuItem
-                    key={item.to}
-                    icon={item.icon}
-                    label={item.label}
-                    active={item.isActive(location.pathname)}
-                    onClick={() => closeAndNavigate(item.to)}
-                  />
-                ))}
-              </div>
-            </>
-          )}
-
-          <MenuDivider />
-          <div className="py-1">
-            <MenuItem
-              icon="person"
-              label="Minha conta"
-              onClick={() => closeAndNavigate('/campo/minha-conta')}
-            />
-            <MenuItem
-              icon="settings"
-              label="Preferências"
-              onClick={() => closeAndNavigate('/campo/preferencias')}
-            />
+            {email && <div className="text-industrial-500 text-[13px] font-medium">{email}</div>}
           </div>
 
           <MenuDivider />
+          <MenuSectionLabel>Conta</MenuSectionLabel>
           <div className="py-1 pb-2">
             <MenuItem icon="logout" label="Sair da conta" destructive onClick={handleLogout} />
           </div>

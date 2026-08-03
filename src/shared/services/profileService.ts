@@ -1,13 +1,13 @@
 import { supabase } from '@/shared/db/supabase'
-import type { Profile, ProfileRole, ProfileStatus } from '@/shared/types/profile'
+import type { Profile } from '@/shared/types/profile'
 
 interface ProfileRow {
   id: string
   full_name: string
   email: string
   phone: string | null
-  role: ProfileRole
-  status: ProfileStatus
+  is_active: boolean
+  activated_at: string | null
   created_at: string
   updated_at: string
 }
@@ -18,8 +18,8 @@ function toProfile(row: ProfileRow): Profile {
     fullName: row.full_name,
     email: row.email,
     phone: row.phone,
-    role: row.role,
-    status: row.status,
+    isActive: row.is_active,
+    activatedAt: row.activated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -28,16 +28,19 @@ function toProfile(row: ProfileRow): Profile {
 export async function fetchOwnProfile(): Promise<Profile | null> {
   const {
     data: { user },
+    error: authError,
   } = await supabase.auth.getUser()
 
+  if (authError) throw authError
   if (!user) return null
 
-  const { data: row } = await supabase
+  const { data: row, error } = await supabase
     .from('profiles')
-    .select('id, full_name, email, phone, role, status, created_at, updated_at')
+    .select('id, full_name, email, phone, is_active, activated_at, created_at, updated_at')
     .eq('id', user.id)
     .maybeSingle()
 
+  if (error) throw error
   if (!row) return null
 
   return toProfile(row as ProfileRow)
@@ -55,9 +58,9 @@ export async function activateOwnProfile(): Promise<{ error?: string; activated:
   const now = new Date().toISOString()
   const { data, error } = await supabase
     .from('profiles')
-    .update({ status: 'ativo', updated_at: now })
+    .update({ is_active: true, activated_at: now, updated_at: now })
     .eq('id', user.id)
-    .eq('status', 'convite_pendente')
+    .is('activated_at', null)
     .select('id')
     .maybeSingle()
 
@@ -72,10 +75,17 @@ export async function activatePendingInviteIfNeeded(): Promise<{
   error?: string
   activated: boolean
 }> {
-  const profile = await fetchOwnProfile()
-  if (profile?.status !== 'convite_pendente') {
-    return { activated: false }
-  }
+  try {
+    const profile = await fetchOwnProfile()
+    if (!profile || profile.activatedAt !== null) {
+      return { activated: false }
+    }
 
-  return activateOwnProfile()
+    return activateOwnProfile()
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Não foi possível carregar o perfil',
+      activated: false,
+    }
+  }
 }

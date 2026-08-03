@@ -4,11 +4,6 @@ import { MemoryRouter } from 'react-router-dom'
 import LoginPage from './LoginPage'
 import { supabase } from '@/shared/db/supabase'
 import { fetchOwnProfile } from '@/shared/services/profileService'
-import { isUserManagementEnabled } from '@/shared/config/features'
-
-vi.mock('@/shared/config/features', () => ({
-  isUserManagementEnabled: vi.fn(() => true),
-}))
 
 const navigateMock = vi.fn()
 const setUserMock = vi.fn()
@@ -45,7 +40,6 @@ afterEach(() => {
 
 describe('LoginPage', () => {
   beforeEach(() => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(true)
     vi.mocked(supabase.auth.signOut).mockImplementation(
       signOutMock.mockResolvedValue({ error: null })
     )
@@ -67,7 +61,7 @@ describe('LoginPage', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Entrar' }))
   }
 
-  it('redireciona admin ativo para /plataforma', async () => {
+  it('redireciona usuário ativo para /inicio', async () => {
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: { session: { user: { id: 'u1' } } },
       error: null,
@@ -77,8 +71,8 @@ describe('LoginPage', () => {
       fullName: 'Admin',
       email: 'user@example.com',
       phone: null,
-      role: 'admin',
-      status: 'ativo',
+      isActive: true,
+      activatedAt: '2026-01-01T00:00:00Z',
       createdAt: '',
       updatedAt: '',
     })
@@ -86,58 +80,11 @@ describe('LoginPage', () => {
     await submitLogin()
 
     await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/plataforma')
+      expect(navigateMock).toHaveBeenCalledWith('/inicio')
     })
   })
 
-  it('redireciona admin ativo para /campo quando gestão de usuários está desativada', async () => {
-    vi.mocked(isUserManagementEnabled).mockReturnValue(false)
-    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { session: { user: { id: 'u1' } } },
-      error: null,
-    } as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>)
-    vi.mocked(fetchOwnProfile).mockResolvedValue({
-      id: 'u1',
-      fullName: 'Admin',
-      email: 'user@example.com',
-      phone: null,
-      role: 'admin',
-      status: 'ativo',
-      createdAt: '',
-      updatedAt: '',
-    })
-
-    await submitLogin()
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/campo')
-    })
-  })
-
-  it('redireciona cliente ativo para /campo', async () => {
-    vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
-      data: { session: { user: { id: 'u2' } } },
-      error: null,
-    } as Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>)
-    vi.mocked(fetchOwnProfile).mockResolvedValue({
-      id: 'u2',
-      fullName: 'Técnico',
-      email: 'user@example.com',
-      phone: null,
-      role: 'cliente',
-      status: 'ativo',
-      createdAt: '',
-      updatedAt: '',
-    })
-
-    await submitLogin()
-
-    await waitFor(() => {
-      expect(navigateMock).toHaveBeenCalledWith('/campo')
-    })
-  })
-
-  it('bloqueia login com convite pendente sem ativar perfil', async () => {
+  it('bloqueia login de conta inativa (convite pendente)', async () => {
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: { session: { user: { id: 'u3' } } },
       error: null,
@@ -147,8 +94,8 @@ describe('LoginPage', () => {
       fullName: 'Convidado',
       email: 'user@example.com',
       phone: null,
-      role: 'cliente',
-      status: 'convite_pendente',
+      isActive: false,
+      activatedAt: null,
       createdAt: '',
       updatedAt: '',
     })
@@ -162,7 +109,7 @@ describe('LoginPage', () => {
     expect(navigateMock).not.toHaveBeenCalled()
   })
 
-  it('bloqueia login de conta suspensa', async () => {
+  it('bloqueia login de conta inativa (suspensa)', async () => {
     vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: { session: { user: { id: 'u4' } } },
       error: null,
@@ -172,8 +119,8 @@ describe('LoginPage', () => {
       fullName: 'Suspenso',
       email: 'user@example.com',
       phone: null,
-      role: 'cliente',
-      status: 'suspenso',
+      isActive: false,
+      activatedAt: '2026-01-01T00:00:00Z',
       createdAt: '',
       updatedAt: '',
     })

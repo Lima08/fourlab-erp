@@ -1,13 +1,10 @@
 import { supabase } from '@/shared/db/supabase'
 import { getInviteRedirectTo } from '@/shared/navigation/getAuthHomePath'
-import type { ProfileRole } from '@/shared/types/profile'
 
 export interface InviteUserPayload {
   fullName: string
   email: string
   phone: string
-  role: ProfileRole
-  clientId?: string
 }
 
 export interface UpdateUserPayload {
@@ -15,7 +12,6 @@ export interface UpdateUserPayload {
   fullName: string
   email: string
   phone: string
-  role: ProfileRole
 }
 
 export type EdgeResult<T> =
@@ -29,10 +25,9 @@ interface EdgeErrorBody {
 
 const ERROR_MESSAGES: Record<string, string> = {
   EMAIL_EXISTS: 'E-mail já cadastrado',
-  NOT_ADMIN: 'Sem permissão',
+  NOT_AUTHORIZED: 'Sem permissão',
   NOT_FOUND: 'Usuário não encontrado',
   INVALID_STATUS: 'Convite não pendente',
-  LAST_ADMIN: 'Não é possível — este é o único administrador.',
   VALIDATION_ERROR: 'Dados inválidos',
 }
 
@@ -101,20 +96,13 @@ function getPasswordSetupRedirectTo(): string {
 }
 
 export async function inviteUser(payload: InviteUserPayload): Promise<EdgeResult<{ id: string }>> {
-  const body: Record<string, unknown> = {
+  return invokeEdgeFunction('invite-user', {
     mode: 'create',
     fullName: payload.fullName,
     email: payload.email,
     phone: payload.phone,
-    role: payload.role,
     redirectTo: getPasswordSetupRedirectTo(),
-  }
-
-  if (payload.role === 'cliente' && payload.clientId) {
-    body.clientId = payload.clientId
-  }
-
-  return invokeEdgeFunction('invite-user', body)
+  })
 }
 
 export async function resendInvite(userId: string): Promise<EdgeResult<void>> {
@@ -137,7 +125,6 @@ export async function updateUser(payload: UpdateUserPayload): Promise<EdgeResult
     fullName: payload.fullName,
     email: payload.email,
     phone: payload.phone,
-    role: payload.role,
   })
 
   if (result.success) {

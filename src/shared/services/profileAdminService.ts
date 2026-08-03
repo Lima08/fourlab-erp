@@ -1,8 +1,8 @@
 import type { PostgrestError } from '@supabase/supabase-js'
 import { supabase } from '@/shared/db/supabase'
-import type { Profile, ProfileRole, ProfileStatus } from '@/shared/types/profile'
+import type { Profile } from '@/shared/types/profile'
 
-export type ProfileFilter = 'all' | 'ativo' | 'convite_pendente' | 'suspenso' | 'admin'
+export type ProfileFilter = 'all' | 'active' | 'inactive'
 
 export interface ProfileListParams {
   filter: ProfileFilter
@@ -21,22 +21,18 @@ export interface ProfileListResult {
 
 export interface ProfileCounts {
   all: number
-  ativo: number
-  convite_pendente: number
-  suspenso: number
-  admin: number
+  active: number
+  inactive: number
 }
 
 export interface ProfileUpdateFields {
   fullName?: string
   email?: string
   phone?: string | null
-  role?: ProfileRole
 }
 
 export interface ProfileFilterConditions {
-  status?: ProfileStatus
-  role?: ProfileRole
+  isActive?: boolean
 }
 
 interface ProfileRow {
@@ -44,8 +40,8 @@ interface ProfileRow {
   full_name: string
   email: string
   phone: string | null
-  role: ProfileRole
-  status: ProfileStatus
+  is_active: boolean
+  activated_at: string | null
   created_at: string
   updated_at: string
 }
@@ -56,8 +52,8 @@ function toProfile(row: ProfileRow): Profile {
     fullName: row.full_name,
     email: row.email,
     phone: row.phone,
-    role: row.role,
-    status: row.status,
+    isActive: row.is_active,
+    activatedAt: row.activated_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -65,41 +61,31 @@ function toProfile(row: ProfileRow): Profile {
 
 export function buildProfileFilter(filter: ProfileFilter): ProfileFilterConditions {
   switch (filter) {
-    case 'ativo':
-      return { status: 'ativo' }
-    case 'convite_pendente':
-      return { status: 'convite_pendente' }
-    case 'suspenso':
-      return { status: 'suspenso' }
-    case 'admin':
-      return { role: 'admin' }
+    case 'active':
+      return { isActive: true }
+    case 'inactive':
+      return { isActive: false }
     case 'all':
     default:
       return {}
   }
 }
 
-export function mapSearchToRole(search: string): ProfileRole | null {
-  const term = search.trim().toLowerCase()
-  if (!term) return null
-  if (term.includes('administrador') || term === 'admin') return 'admin'
-  if (term.includes('cliente') || term === 'client') return 'cliente'
-  return null
-}
-
 export async function fetchProfileCounts(): Promise<ProfileCounts> {
-  const { data, error } = await supabase.rpc('get_profile_counts')
+  const [allResult, activeResult, inactiveResult] = await Promise.all([
+    supabase.from('profiles').select('*', { count: 'exact', head: true }),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_active', true),
+    supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('is_active', false),
+  ])
 
-  if (error) throw error
-
-  const counts = data as Record<string, number> | null
+  if (allResult.error) throw allResult.error
+  if (activeResult.error) throw activeResult.error
+  if (inactiveResult.error) throw inactiveResult.error
 
   return {
-    all: counts?.all ?? 0,
-    ativo: counts?.ativo ?? 0,
-    convite_pendente: counts?.convite_pendente ?? 0,
-    suspenso: counts?.suspenso ?? 0,
-    admin: counts?.admin ?? 0,
+    all: allResult.count ?? 0,
+    active: activeResult.count ?? 0,
+    inactive: inactiveResult.count ?? 0,
   }
 }
 
@@ -109,21 +95,13 @@ export async function fetchProfileList(params: ProfileListParams): Promise<Profi
   let query = supabase.from('profiles').select('*', { count: 'exact' })
 
   const filterConditions = buildProfileFilter(filter)
-  if (filterConditions.status) {
-    query = query.eq('status', filterConditions.status)
-  }
-  if (filterConditions.role) {
-    query = query.eq('role', filterConditions.role)
+  if (filterConditions.isActive !== undefined) {
+    query = query.eq('is_active', filterConditions.isActive)
   }
 
   if (search.trim()) {
     const term = `%${search.trim()}%`
-    const roleTerm = mapSearchToRole(search)
-    const orParts = [`full_name.ilike.${term}`, `email.ilike.${term}`]
-    if (roleTerm) {
-      orParts.push(`role.eq.${roleTerm}`)
-    }
-    query = query.or(orParts.join(','))
+    query = query.or(`full_name.ilike.${term},email.ilike.${term}`)
   }
 
   const from = (page - 1) * pageSize
@@ -145,10 +123,10 @@ export async function fetchProfileList(params: ProfileListParams): Promise<Profi
   }
 }
 
-export async function updateProfileStatus(id: string, status: ProfileStatus): Promise<void> {
+export async function updateProfileActiveStatus(id: string, isActive: boolean): Promise<void> {
   const { error } = await supabase
     .from('profiles')
-    .update({ status, updated_at: new Date().toISOString() })
+    .update({ is_active: isActive, updated_at: new Date().toISOString() })
     .eq('id', id)
 
   if (error) throw error
@@ -159,14 +137,12 @@ export async function updateProfileFields(id: string, fields: ProfileUpdateField
     full_name?: string
     email?: string
     phone?: string | null
-    role?: ProfileRole
     updated_at: string
   } = { updated_at: new Date().toISOString() }
 
   if (fields.fullName !== undefined) update.full_name = fields.fullName
   if (fields.email !== undefined) update.email = fields.email
   if (fields.phone !== undefined) update.phone = fields.phone
-  if (fields.role !== undefined) update.role = fields.role
 
   const { error } = await supabase.from('profiles').update(update).eq('id', id)
 
@@ -180,8 +156,6 @@ export async function deleteProfile(id: string): Promise<void> {
 }
 
 export function mapProfileError(error: PostgrestError): string {
-  if (error.message?.includes('assert_not_last_admin')) {
-    return 'Não é possível — este é o único administrador.'
-  }
+  void error
   return 'Operação falhou. Tente novamente.'
 }
