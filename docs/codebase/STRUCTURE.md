@@ -9,7 +9,8 @@ fourlab-erp/
 │   ├── app/                   # Shell autenticado + domínio
 │   │   ├── AppGuard.tsx
 │   │   ├── AppLayout.tsx
-│   │   ├── components/        # AppHeaderNav, AppBottomNav
+│   │   ├── components/        # AppSidebar, AppBottomNav
+│   │   ├── navigation/        # navItems (fonte única)
 │   │   ├── pages/HomePage.tsx
 │   │   └── customers/         # Módulo Clientes
 │   │       ├── components/
@@ -48,7 +49,8 @@ fourlab-erp/
 | --- | --- |
 | Rotas | `src/router.tsx` |
 | Guard auth | `src/app/AppGuard.tsx` |
-| Nav módulos (mobile/desktop) | `src/app/components/AppBottomNav.tsx`, `AppHeaderNav.tsx` |
+| Nav módulos (mobile/desktop) | `src/app/components/AppBottomNav.tsx`, `AppSidebar.tsx` |
+| Lista de módulos (nav) | `src/app/navigation/navItems.ts` |
 | Client Supabase | `src/shared/db/supabase.ts` |
 | Tipos DB | `src/shared/db/database.types.ts` |
 | Login | `src/auth/LoginPage.tsx` |

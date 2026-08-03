@@ -21,9 +21,9 @@ Browser (PWA)
 
 ### `src/app/`
 
-Shell autenticado: `AppGuard`, `AppLayout` (header + bottom nav mobile), `HomePage` (dashboard), módulo `customers/`, pasta `dashboard/` (hooks + seções).
+Shell autenticado: `AppGuard`, `AppLayout` (header + sidebar `md+` + bottom nav mobile), `HomePage` (dashboard), módulo `customers/`, pasta `dashboard/` (hooks + seções).
 
-**Navegação:** bottom nav `< md`; links equivalentes no header `md+` (`/inicio`, `/clientes`).
+**Navegação:** bottom nav `< md`; sidebar colapsável no body `md+` (`/inicio`, `/clientes`). Fonte única: `src/app/navigation/navItems.ts`. Header só brand + UserMenu.
 
 ### `src/app/dashboard/`
 

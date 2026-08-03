@@ -24,7 +24,7 @@ UI e fluxos novos partem do mobile; desktop é progressive enhancement.
 - **Viewport base:** projetar e validar em ~375px de largura antes de `md+`.
 - **Touch targets:** controles acionáveis com área confortável ao toque (evitar hit areas minúsculas).
 - **Formulários:** páginas dedicadas para criar/editar (não sheets longos no MVP), com hierarquia escaneável no celular.
-- **Navegação de módulos:** bottom nav no mobile; links equivalentes no header a partir de `md`.
+- **Navegação de módulos:** bottom nav no mobile; sidebar colapsável no body a partir de `md` (módulos não ficam no header).
 - **Layout:** progressive enhancement com breakpoints Tailwind (`md+`); não assumir hover como único affordance.
 - **Checagem:** antes de considerar uma tela pronta, revisar no viewport estreito (DevTools ou device).
 

@@ -1,11 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { Icon } from '@/components/ui/icon'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { to: '/inicio', label: 'Início', icon: 'home' },
-  { to: '/clientes', label: 'Clientes', icon: 'groups' },
-] as const
+import { navItems } from '@/app/navigation/navItems'
 
 export function AppBottomNav() {
   return (
