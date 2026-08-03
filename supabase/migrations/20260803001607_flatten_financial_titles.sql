@@ -16,15 +16,22 @@ ALTER TABLE public.financial_titles
   ADD COLUMN payment_method public.payment_method,
   ADD COLUMN installment_no integer;
 
+-- Drop sale_activities → installments FK before remapping UUIDs to titles.
+ALTER TABLE public.sale_activities
+  DROP CONSTRAINT IF EXISTS sale_activities_installment_id_fkey;
+
 -- Best-effort backfill: first installment updates parent title; extras become new titles.
+-- Also retarget sale_activities.installment_id → the title that now represents that obligation.
 DO $$
 DECLARE
   r record;
   v_parent public.financial_titles%ROWTYPE;
   v_touched boolean;
+  v_title_id uuid;
 BEGIN
   FOR r IN
     SELECT
+      fi.id AS installment_id,
       fi.title_id,
       fi.due_date,
       fi.payment_date,
@@ -51,6 +58,7 @@ BEGIN
         installment_no = r.installment_no,
         total_amount = r.amount
       WHERE t.id = r.title_id;
+      v_title_id := r.title_id;
     ELSE
       INSERT INTO public.financial_titles (
         category_id, order_id, customer_id, kind, description, total_amount,
@@ -69,8 +77,13 @@ BEGIN
         r.status,
         r.payment_method,
         r.installment_no
-      );
+      )
+      RETURNING id INTO v_title_id;
     END IF;
+
+    UPDATE public.sale_activities
+    SET installment_id = v_title_id
+    WHERE installment_id = r.installment_id;
   END LOOP;
 END;
 $$;
@@ -91,9 +104,13 @@ ALTER TABLE public.financial_titles
   ADD CONSTRAINT financial_titles_installment_no_positive
     CHECK (installment_no IS NULL OR installment_no > 0);
 
--- Retarget sale_activities before dropping installments
-ALTER TABLE public.sale_activities
-  DROP CONSTRAINT IF EXISTS sale_activities_installment_id_fkey;
+-- Orphan activity refs (installment already gone / unmatched) → NULL before FK.
+UPDATE public.sale_activities sa
+SET installment_id = NULL
+WHERE sa.installment_id IS NOT NULL
+  AND NOT EXISTS (
+    SELECT 1 FROM public.financial_titles ft WHERE ft.id = sa.installment_id
+  );
 
 ALTER TABLE public.sale_activities
   RENAME COLUMN installment_id TO title_id;
